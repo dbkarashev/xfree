@@ -1,0 +1,18 @@
+{
+  "$schema": "./schema.json",
+  "columnWidth": 450,
+  "columns": [
+    {
+      "type": "custom",
+      "url": "https://x.com/i/bookmarks"
+    },
+    {
+      "type": "custom",
+      "url": "https://x.com/home"
+    },
+    {
+      "type": "custom",
+      "url": "https://x.com/i/grok"
+    }
+  ]
+}
