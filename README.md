@@ -1,7 +1,7 @@
 <h1 align="center">X Free</h1>
 <p align="center">Your favorite 𝕏 client for macOS, now in compact mode</p>
 
-<p align="center"><img src="assets/XFree.png" alt="X Free" width="150"></p>
+<p align="center"><img src="assets/preview.png" alt="X Free" width="800"></p>
 
 ---
 
@@ -10,10 +10,6 @@
     <img src="https://img.shields.io/badge/Platform-macOS-0071E3?style=for-the-badge&logo=apple&logoColor=white" alt="macOS">&nbsp;
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2E8B57?style=for-the-badge" alt="MIT License"></a>
 </p>
-
-<br />
-
-<p align="center"><img src="assets/screenshot.png" alt="X Free in compact mode" width="540" /></p>
 
 <!--
 ## Settings
