@@ -1,12 +1,8 @@
-<h1 align="center">Foon</h1>
-<p align="center">iOS food journal with photo recognition, barcode scanning, and nutrition tracking</p>
+<h1 align="center">X Free</h1>
+<p align="center">A personal macOS client for 𝕏, built as a multi-column TweetDeck-style layout with ad-blocking and compact mode</p>
 <p align="center"><code>made with <3 by dbkarashev</code></p>
 
 ---
-
-# X Free
-
-A personal macOS client for 𝕏 — multi-column TweetDeck-style layout with ad-blocking and a compact single-column mode.
 
 ## Settings
 
