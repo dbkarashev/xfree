@@ -12,8 +12,8 @@ struct WebView: NSViewRepresentable {
     @Binding var scriptExecutionRequest: String?
 
     @AppStorage("pageZoom") var pageZoom: Double = 1
-    @AppStorage("isDarkMode") var isDarkMode: Bool = false
 
+    var isDarkMode: Bool = false
     var refreshSwitch: Bool = false
     var configuration: WKWebViewConfiguration? = nil
 
@@ -39,9 +39,9 @@ struct WebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let webView: WKWebView
         if let configuration = configuration {
-            webView = WKWebView(frame: .zero, configuration: configuration)
+            webView = HorizontalScrollSwallowingWebView(frame: .zero, configuration: configuration)
         } else {
-            webView = WKWebView()
+            webView = HorizontalScrollSwallowingWebView()
         }
         // Pretend Safari because 𝕏 bans the user agent of WebView
         webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1.2 Safari/605.1.15"
@@ -62,14 +62,17 @@ struct WebView: NSViewRepresentable {
         if webView.underPageBackgroundColor != expectedUnderPageColor {
             webView.underPageBackgroundColor = expectedUnderPageColor
         }
-        if let url = webView.url, url != context.coordinator.lastUrl {
-            let request = URLRequest(url: url)
+        // Reload when caller swapped the URL out from under us (e.g. column URL edited in Settings).
+        if context.coordinator.lastRequestedUrl != url {
+            context.coordinator.lastRequestedUrl = url
             context.coordinator.lastUrl = url
-            webView.load(request)
+            webView.load(URLRequest(url: url))
+        } else if let current = webView.url, current != context.coordinator.lastUrl {
+            context.coordinator.lastUrl = current
+            webView.load(URLRequest(url: current))
         }
         if refreshSwitch != context.coordinator.refreshSwitch {
-            let request = URLRequest(url: url)
-            webView.load(request)
+            webView.load(URLRequest(url: url))
             context.coordinator.refreshSwitch = !refreshSwitch
         } else if let script = scriptExecutionRequest {
             webView.evaluateJavaScript(script)
@@ -87,14 +90,30 @@ struct WebView: NSViewRepresentable {
     }
 }
 
+/// WKWebView subclass that forwards horizontal-dominant scroll events up the responder chain
+/// instead of letting x.com handle them (it hijacks horizontal swipes to switch For you ↔ Following).
+/// Forwarding lets an outer SwiftUI ScrollView receive the event when columns overflow,
+/// while preventing in-page tab switching either way.
+private final class HorizontalScrollSwallowingWebView: WKWebView {
+    override func scrollWheel(with event: NSEvent) {
+        if abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
+            nextResponder?.scrollWheel(with: event)
+            return
+        }
+        super.scrollWheel(with: event)
+    }
+}
+
 class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private let owner: WebView
     var lastUrl: URL
+    var lastRequestedUrl: URL
     var refreshSwitch: Bool
 
     init(owner: WebView) {
         self.owner = owner
         self.lastUrl = owner.url
+        self.lastRequestedUrl = owner.url
         self.refreshSwitch = false
         super.init()
         owner.configuration?.userContentController.add(self, name: WebViewConfigurations.handlerName)

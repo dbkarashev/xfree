@@ -43,6 +43,7 @@ struct WebViewConfigurations {
             wrapOnLoad(contents: onLoadScripts.filter({ $0.runAfterLoad }).map(\.scriptContent)),
         ].joined(separator: "\n")
         let configuration = WKWebViewConfiguration()
+        configuration.preferences.isElementFullscreenEnabled = true
         let userContentController = WKUserContentController()
         configuration.userContentController = userContentController
         let userScript = WKUserScript(

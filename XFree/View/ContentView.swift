@@ -2,20 +2,22 @@ import SwiftUI
 import WebKit
 
 struct ContentView: View {
-    var appConfig: AppConfig
+    @EnvironmentObject var store: AppConfigStore
 
     @AppStorage("pageZoom") var pageZoom: Double = 1
-    @AppStorage("isDarkMode") var isDarkMode: Bool = false
-    @AppStorage("hideAds") var hideAds: Bool = false
+    @AppStorage("appearance") var appearance: AppearanceMode = .system
+    @AppStorage("hideAds") var hideAds: Bool = true
+
+    @Environment(\.colorScheme) private var systemColorScheme
 
     @State var isLoading: Bool = false
     @State var isShowingAlert: Bool = false
     @State var alertMessage: String? = nil
-    @State var backgroundColor: Color = .white
-    
+    /// Override from x.com `theme-color` meta. `nil` falls back to default per active theme.
+    @State var customBackgroundColor: Color? = nil
+
     @State var refreshSwitch: Bool = false
     @State var scriptExecutionRequest: String? = nil
-    @State var isShowConfirmOpenPreference: Bool = false
 
     @State var webViewMessage: String? = nil
     @State var loginViewMessage: String? = nil
@@ -23,42 +25,41 @@ struct ContentView: View {
     @State var homeUrl: URL = URL(string: "https://x.com/home")!
     @State var notificationsUrl: URL = URL(string: "https://x.com/notifications")!
     @State var profileUrl: URL? = nil
+    @State var compactPageIndex: Int = 0
 
-    private static let sideHeaderWidth: CGFloat = 68
-    private static func defaultBackgroundColor(isDarkMode: Bool) -> Color {
-        isDarkMode ? Color(hex: "#000000") : Color(hex: "#FFFFFF")
+    private static let compactWidthThreshold: CGFloat = 600
+
+    private var isDarkMode: Bool {
+        (appearance.colorScheme ?? systemColorScheme) == .dark
     }
-    private static func borderColor(for backgroundColor: Color) -> Color {
-        backgroundColor == Color.white ? Color(hex: "#EFF3F4") : Color(hex: "#2F3336")
+
+    private var backgroundColor: Color {
+        customBackgroundColor ?? (isDarkMode ? .black : .white)
     }
-    private static func textColor(for backgroundColor: Color) -> Color {
-        backgroundColor == Color.white ? Color(hex: "#536471") : Color(hex: "#71767B")
-    }
+
     private static func setNightModeCookieScript(isDarkMode: Bool) -> String {
-        return """
-                document.cookie = "night_mode=\(isDarkMode ? 2 : 0); domain=.x.com; path=/";
-                location.reload();
-            """
-    }
-
-    init(appConfig: AppConfig) {
-        self.appConfig = appConfig
+        """
+        document.cookie = "night_mode=\(isDarkMode ? 2 : 0); domain=.x.com; path=/";
+        location.reload();
+        """
     }
 
     @ViewBuilder
     private func makeColumn(
-        column: AppConfig.Column, isLeftMostXColumn: Bool, profileUrl: Binding<URL?>, columnWidth: CGFloat
-    )
-        -> some View
-    {
-        let width = isLeftMostXColumn ? columnWidth + Self.sideHeaderWidth : columnWidth
+        column: AppConfigStore.Column,
+        isFirstXColumn: Bool,
+        profileUrl: Binding<URL?>,
+        columnWidth: CGFloat
+    ) -> some View {
+        let width = columnWidth
 
         let baseConfiguration: [WebViewConfigurations.OnLoadScript] = {
             var scripts: [WebViewConfigurations.OnLoadScript] = [.global]
-            if isLeftMostXColumn {
-                scripts.append(.findThemeColor)
-            } else if column.isXColumn {
+            if column.isXColumn {
                 scripts.append(contentsOf: [.hideSideHeader, .hidePostArea])
+                if isFirstXColumn {
+                    scripts.append(.findThemeColor)
+                }
             }
             if hideAds {
                 scripts.append(.hideAds)
@@ -72,6 +73,7 @@ struct ContentView: View {
                 isLoading: $isLoading, url: $homeUrl, alertMessage: $alertMessage,
                 messageFromWebView: $webViewMessage,
                 scriptExecutionRequest: $scriptExecutionRequest,
+                isDarkMode: isDarkMode,
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
                     onLoadScripts: baseConfiguration + [.clickForYouTab])
@@ -81,6 +83,7 @@ struct ContentView: View {
                 isLoading: $isLoading, url: $homeUrl, alertMessage: $alertMessage,
                 messageFromWebView: $webViewMessage,
                 scriptExecutionRequest: $scriptExecutionRequest,
+                isDarkMode: isDarkMode,
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
                     onLoadScripts: baseConfiguration + [.clickFollowingTab])
@@ -91,6 +94,7 @@ struct ContentView: View {
                 alertMessage: $alertMessage,
                 messageFromWebView: $webViewMessage,
                 scriptExecutionRequest: $scriptExecutionRequest,
+                isDarkMode: isDarkMode,
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
                     onLoadScripts: baseConfiguration)
@@ -102,6 +106,7 @@ struct ContentView: View {
                     messageFromWebView: $webViewMessage,
                     scriptExecutionRequest: column.isXColumn
                         ? $scriptExecutionRequest : .constant(nil),
+                    isDarkMode: isDarkMode,
                     refreshSwitch: refreshSwitch,
                     configuration: WebViewConfigurations.makeConfiguration(
                         onLoadScripts: baseConfiguration)
@@ -113,197 +118,179 @@ struct ContentView: View {
                     isLoading: $isLoading, url: .constant(url), alertMessage: $alertMessage,
                     messageFromWebView: $webViewMessage,
                     scriptExecutionRequest: $scriptExecutionRequest,
+                    isDarkMode: isDarkMode,
                     refreshSwitch: refreshSwitch,
                     configuration: WebViewConfigurations.makeConfiguration(
                         onLoadScripts: baseConfiguration)
                 ).frame(width: width)
             }
         }
-        EmptyView()
     }
-
-    lazy var leftMostXColumnIndex: Int? = {
-        return appConfig.columns.firstIndex { $0.isXColumn }
-    }()
 
     var body: some View {
         GeometryReader { geometry in
-                    // Determine the number of columns from the appConfig.
-                    let columnCount = appConfig.columns.count
+            let columnCount = store.columns.count
+            let isCompact = geometry.size.width < Self.compactWidthThreshold
+            let baseWidth: CGFloat = {
+                if isCompact { return geometry.size.width }
+                switch store.widthMode {
+                case .auto:
+                    let computed = geometry.size.width / CGFloat(max(columnCount, 1))
+                    return max(computed, AppConfigStore.minColumnWidth)
+                case .manual:
+                    return CGFloat(store.columnWidth)
+                }
+            }()
+            let dynamicColumnWidth = baseWidth * CGFloat(pageZoom)
+            let totalContentWidth = CGFloat(columnCount) * dynamicColumnWidth
+            let canScroll = !isCompact && totalContentWidth > geometry.size.width + 0.5
 
-                    // If a manual width is provided in the app config, use it;
-                    // otherwise compute the base width dynamically.
-                    let manualWidth = appConfig.columnWidth.map(CGFloat.init)
-                    let baseWidth: CGFloat = {
-                        if let manualWidth = manualWidth {
-                            return manualWidth
-                        } else {
-                            // For one column, reserve space for the side header.
-                            if columnCount == 1 {
-                                return geometry.size.width - Self.sideHeaderWidth
-                            } else {
-                                // With multiple columns, subtract the side header width from the total available width.
-                                return (geometry.size.width - Self.sideHeaderWidth) / CGFloat(columnCount)
-                            }
-                        }
-                    }()
+            ZStack {
+                Button("+") { pageZoom += 0.2 }
+                    .keyboardShortcut("+").opacity(0)
+                Button("-") { pageZoom -= 0.2 }
+                    .keyboardShortcut("-").opacity(0)
+                Button("r") { refreshSwitch.toggle() }
+                    .keyboardShortcut("r").opacity(0)
 
-                    // Apply the zoom factor.
-                    let dynamicColumnWidth = baseWidth * CGFloat(pageZoom)
-
-                    ZStack {
-                        // Update zoom buttons to change only the zoom factor.
-                        Button("+") {
-                            pageZoom += 0.2
-                        }
-                        .keyboardShortcut("+")
-                        .opacity(0)
-
-                        Button("-") {
-                            pageZoom -= 0.2
-                        }
-                        .keyboardShortcut("-")
-                        .opacity(0)
-
-                        Button("r") {
-                            refreshSwitch.toggle()
-                        }
-                        .keyboardShortcut("r")
-                        .opacity(0)
-
-                        Button(",") {
-                            isShowConfirmOpenPreference = true
-                        }
-                        .keyboardShortcut(",")
-                        .opacity(0)
-                        .alert(isPresented: $isShowConfirmOpenPreference) {
-                            Alert(
-                                title: Text("Do you open settings folder?"),
-                                message: Text("Please edit settings.json and restart app."),
-                                primaryButton: .default(
-                                    Text("Open Folder"),
-                                    action: {
-                                        NSWorkspace.shared.open(AppConfig.configDirectoryUrl)
-                                        isShowConfirmOpenPreference = false
-                                    }),
-                                secondaryButton: .cancel(Text("Cancel"), action: {
-                                    isShowConfirmOpenPreference = false
-                                })
-                            )
-                        }
-
-                        if profileUrl != nil {
-                            ScrollView(.horizontal) {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    HStack(spacing: 0) {
-                                        ForEach(appConfig.columns.indices, id: \.self) { index in
-                                            let isLeftMostXColumn =
-                                                index == (appConfig.columns.firstIndex { $0.isXColumn } ?? -1)
-                                            makeColumn(
-                                                column: appConfig.columns[index],
-                                                isLeftMostXColumn: isLeftMostXColumn,
-                                                profileUrl: $profileUrl,
-                                                columnWidth: dynamicColumnWidth
-                                            )
-                                        }
-                                    }
-                                }
-                                .alert(isPresented: $isShowingAlert) {
-                                    Alert(title: Text(alertMessage ?? ""))
-                                }
-                                HStack(spacing: 24) {
-                                    AppearanceToggle(isOn: $isDarkMode) { }
-                                        .onChange(of: isDarkMode) { newValue in
-                                            scriptExecutionRequest = Self.setNightModeCookieScript(isDarkMode: isDarkMode)
-                                            backgroundColor = Self.defaultBackgroundColor(isDarkMode: isDarkMode)
-                                        }
-                                    HideAdsToggle(isOn: $hideAds) { Text("Hide Ads") }
-                                        .onChange(of: hideAds) { newValue in
-                                            scriptExecutionRequest = newValue
-                                                ? WebViewConfigurations.hideAds
-                                                : WebViewConfigurations.showAds
-                                        }
-                                    Text("⌘+ Zoom In")
-                                        .foregroundColor(Self.textColor(for: backgroundColor))
-                                    Text("⌘- Zoom out")
-                                        .foregroundColor(Self.textColor(for: backgroundColor))
-                                    Text("⌘R Refresh")
-                                        .foregroundColor(Self.textColor(for: backgroundColor))
-                                    Text("⌘, Settings")
-                                        .foregroundColor(Self.textColor(for: backgroundColor))
-                                    Spacer()
-                                }
-                                .foregroundColor(Self.textColor(for: backgroundColor))
-                                .padding()
-                                .overlay(
-                                    Rectangle()
-                                        .frame(height: 1, alignment: .top)
-                                        .foregroundColor(Self.borderColor(for: backgroundColor)),
-                                    alignment: .top
-                                )
-                            }
-                        } else {
-                            LoginView(
-                                isShowingAlert: $isShowingAlert,
-                                alertMessage: $alertMessage,
-                                loginViewMessage: $loginViewMessage
-                            )
+                ForEach(1...9, id: \.self) { num in
+                    Button("\(num)") {
+                        let target = num - 1
+                        if target < store.columns.count {
+                            compactPageIndex = target
                         }
                     }
-                    .background(backgroundColor)
-                    .colorScheme(isDarkMode ? .dark : .light)
-                    // The onChange modifiers for loginViewMessage, webViewMessage, and alertMessage remain unchanged.
-                    .onChange(of: loginViewMessage) { loginViewMessage in
-                        if let messageText = loginViewMessage,
-                           let messageData = messageText.data(using: .utf8),
-                           let message = try? JSONDecoder().decode(WebViewMessage.self, from: messageData) {
-                            switch message.type {
-                            case .userName:
-                                if let url = URL(string: "https://x.com/\(message.body)") {
-                                    profileUrl = url
-                                }
-                            case .themeColor:
-                                let color = Color(hex: message.body)
-                                backgroundColor = color
-                                isDarkMode = color != Color.white
+                    .keyboardShortcut(KeyEquivalent(Character("\(num)")), modifiers: .command)
+                    .opacity(0)
+                    .frame(width: 0, height: 0)
+                }
+
+                if profileUrl != nil {
+                    if isCompact {
+                        compactPager(columnWidth: geometry.size.width)
+                            .alert(isPresented: $isShowingAlert) {
+                                Alert(title: Text(alertMessage ?? ""))
                             }
-                        }
-                    }
-                    .onChange(of: webViewMessage) { rawMessage in
-                        if let messageText = rawMessage,
-                           let messageData = messageText.data(using: .utf8),
-                           let message = try? JSONDecoder().decode(WebViewMessage.self, from: messageData) {
-                            switch message.type {
-                            case .userName:
-                                if let url = URL(string: "https://x.com/\(message.body)") {
-                                    profileUrl = url
-                                }
-                            case .themeColor:
-                                let color = Color(hex: message.body)
-                                backgroundColor = color
-                                isDarkMode = color != Color.white
+                    } else {
+                        columnsStack(dynamicColumnWidth: dynamicColumnWidth, canScroll: canScroll)
+                            .alert(isPresented: $isShowingAlert) {
+                                Alert(title: Text(alertMessage ?? ""))
                             }
-                        }
                     }
-                    .onChange(of: alertMessage) { message in
-                        isShowingAlert = message != nil
+                } else {
+                    LoginView(
+                        isShowingAlert: $isShowingAlert,
+                        alertMessage: $alertMessage,
+                        loginViewMessage: $loginViewMessage
+                    )
+                }
+            }
+            .background(backgroundColor)
+            .preferredColorScheme(appearance.colorScheme)
+            .onChange(of: appearance) { _ in
+                customBackgroundColor = nil
+                scriptExecutionRequest = Self.setNightModeCookieScript(isDarkMode: isDarkMode)
+            }
+            .onChange(of: systemColorScheme) { _ in
+                if appearance == .system {
+                    customBackgroundColor = nil
+                    scriptExecutionRequest = Self.setNightModeCookieScript(isDarkMode: isDarkMode)
+                }
+            }
+            .onChange(of: hideAds) { newValue in
+                scriptExecutionRequest = newValue
+                    ? WebViewConfigurations.hideAds
+                    : WebViewConfigurations.showAds
+            }
+            .onChange(of: loginViewMessage) { handleMessage($0) }
+            .onChange(of: webViewMessage) { handleMessage($0) }
+            .onChange(of: alertMessage) { isShowingAlert = $0 != nil }
+        }
+    }
+
+    @ViewBuilder
+    private func compactPager(columnWidth: CGFloat) -> some View {
+        let firstXIndex = store.columns.firstIndex { $0.isXColumn } ?? -1
+        VStack(spacing: 0) {
+            PagingScrollView(
+                pageCount: store.columns.count,
+                pageWidth: columnWidth,
+                currentPage: $compactPageIndex
+            ) { index in
+                let column = store.columns[index]
+                makeColumn(
+                    column: column,
+                    isFirstXColumn: index == firstXIndex,
+                    profileUrl: $profileUrl,
+                    columnWidth: columnWidth
+                )
+            }
+            .onAppear {
+                if compactPageIndex >= store.columns.count {
+                    compactPageIndex = defaultCompactPageIndex
+                } else if compactPageIndex == 0 {
+                    compactPageIndex = defaultCompactPageIndex
+                }
+            }
+
+            if store.columns.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(0..<store.columns.count, id: \.self) { index in
+                        Circle()
+                            .frame(width: 6, height: 6)
+                            .foregroundStyle(index == compactPageIndex ? Color.primary : Color.primary.opacity(0.25))
+                            .onTapGesture { compactPageIndex = index }
                     }
-                } // End of GeometryReader
+                }
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private var defaultCompactPageIndex: Int {
+        if let i = store.columns.firstIndex(where: {
+            $0.type == .custom && $0.url == "https://x.com/home"
+        }) { return i }
+        if let i = store.columns.firstIndex(where: { $0.isXColumn }) { return i }
+        return 0
+    }
+
+    @ViewBuilder
+    private func columnsStack(dynamicColumnWidth: CGFloat, canScroll: Bool) -> some View {
+        let firstXIndex = store.columns.firstIndex { $0.isXColumn } ?? -1
+        let stack = HStack(spacing: 0) {
+            ForEach(Array(store.columns.enumerated()), id: \.element.id) { index, column in
+                makeColumn(
+                    column: column,
+                    isFirstXColumn: index == firstXIndex,
+                    profileUrl: $profileUrl,
+                    columnWidth: dynamicColumnWidth
+                )
+            }
+        }
+        if canScroll {
+            ScrollView(.horizontal) { stack }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+        } else {
+            stack.frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func handleMessage(_ raw: String?) {
+        guard let raw,
+              let data = raw.data(using: .utf8),
+              let message = try? JSONDecoder().decode(WebViewMessage.self, from: data)
+        else { return }
+        switch message.type {
+        case .userName:
+            if let url = URL(string: "https://x.com/\(message.body)") {
+                profileUrl = url
+            }
+        case .themeColor:
+            // Honor X's theme-color only when user hasn't pinned a scheme.
+            if appearance == .system {
+                customBackgroundColor = Color(hex: message.body)
+            }
+        }
     }
 }
-
-//struct ContentView_Previews: PreviewProvider {
-//    private static var defaultConfig: AppConfig {
-//        return AppConfig(columns: [
-//            AppConfig.Column(type: .forYou),
-//            AppConfig.Column(type: .following),
-//            AppConfig.Column(type: .notifications),
-//            AppConfig.Column(type: .profile),
-//        ])
-//    }
-//
-//    static var previews: some View {
-//        ContentView(appConfig: defaultConfig)
-//            .frame(minWidth: 1280, minHeight: 900)
-//    }
-//}

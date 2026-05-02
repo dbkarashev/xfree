@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		004D9E072FA6224C00545CFE /* AppearanceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004D9E062FA6224C00545CFE /* AppearanceMode.swift */; };
+		004D9E092FA6227200545CFE /* AppConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004D9E082FA6227200545CFE /* AppConfigStore.swift */; };
+		004D9E0B2FA6228F00545CFE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004D9E0A2FA6228F00545CFE /* SettingsView.swift */; };
+		004D9E0D2FA622C300545CFE /* PagingScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 004D9E0C2FA622C300545CFE /* PagingScrollView.swift */; };
 		5B0DC3542A8FC79400268684 /* WebViewConfigurations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0DC3532A8FC79400268684 /* WebViewConfigurations.swift */; };
-		5B1CC26F2A95944A00DF7D83 /* AppearanceToggle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1CC26E2A95944A00DF7D83 /* AppearanceToggle.swift */; };
-		5B1CC2712A95968E00DF7D83 /* SunIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1CC2702A95968E00DF7D83 /* SunIcon.swift */; };
-		5B1CC2732A95969600DF7D83 /* MoonIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1CC2722A95969600DF7D83 /* MoonIcon.swift */; };
 		5B5685392A92FF2900298476 /* WebViewMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B5685382A92FF2900298476 /* WebViewMessage.swift */; };
 		5B56853B2A93058500298476 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B56853A2A93058500298476 /* Color+Hex.swift */; };
-		5B5F42252AAA368E0031658B /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B5F42242AAA368E0031658B /* AppConfig.swift */; };
 		5B5F42282AAAB0700031658B /* settings.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B5F42272AAAB0700031658B /* settings.json */; };
 		5B5F422A2AAAB0870031658B /* schema.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B5F42292AAAB0870031658B /* schema.json */; };
 		5B90B8C32A8E6D7300185EAA /* XFreeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B90B8C22A8E6D7300185EAA /* XFreeApp.swift */; };
@@ -22,18 +22,17 @@
 		5B90B8CA2A8E6D7400185EAA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B90B8C92A8E6D7400185EAA /* Preview Assets.xcassets */; };
 		5B90B8D22A8E6E6400185EAA /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B90B8D12A8E6E6400185EAA /* WebView.swift */; };
 		5B90B8D52A8E7A2F00185EAA /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B90B8D42A8E7A2F00185EAA /* LoginView.swift */; };
-		5BD50E852C14BBFE004D4A7E /* HideAdsToggle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD50E842C14BBFE004D4A7E /* HideAdsToggle.swift */; };
 		5BAB0717000000000000AB01 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BAB0717000000000000AB02 /* AboutView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		004D9E062FA6224C00545CFE /* AppearanceMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceMode.swift; sourceTree = "<group>"; };
+		004D9E082FA6227200545CFE /* AppConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigStore.swift; sourceTree = "<group>"; };
+		004D9E0A2FA6228F00545CFE /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		004D9E0C2FA622C300545CFE /* PagingScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingScrollView.swift; sourceTree = "<group>"; };
 		5B0DC3532A8FC79400268684 /* WebViewConfigurations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewConfigurations.swift; sourceTree = "<group>"; };
-		5B1CC26E2A95944A00DF7D83 /* AppearanceToggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceToggle.swift; sourceTree = "<group>"; };
-		5B1CC2702A95968E00DF7D83 /* SunIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunIcon.swift; sourceTree = "<group>"; };
-		5B1CC2722A95969600DF7D83 /* MoonIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonIcon.swift; sourceTree = "<group>"; };
 		5B5685382A92FF2900298476 /* WebViewMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewMessage.swift; sourceTree = "<group>"; };
 		5B56853A2A93058500298476 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
-		5B5F42242AAA368E0031658B /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		5B5F42272AAAB0700031658B /* settings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = settings.json; sourceTree = "<group>"; };
 		5B5F42292AAAB0870031658B /* schema.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = schema.json; sourceTree = "<group>"; };
 		5B90B8BF2A8E6D7300185EAA /* X Free.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "X Free.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -44,7 +43,6 @@
 		5B90B8CB2A8E6D7400185EAA /* XFree.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = XFree.entitlements; sourceTree = "<group>"; };
 		5B90B8D12A8E6E6400185EAA /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		5B90B8D42A8E7A2F00185EAA /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		5BD50E842C14BBFE004D4A7E /* HideAdsToggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HideAdsToggle.swift; sourceTree = "<group>"; };
 		5BAB0717000000000000AB02 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -62,13 +60,12 @@
 		5B1CC26C2A95051600DF7D83 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				5B66C9672AE7FBF400D51830 /* Icon */,
 				5BAB0717000000000000AB02 /* AboutView.swift */,
 				5B90B8C42A8E6D7300185EAA /* ContentView.swift */,
-				5B1CC26E2A95944A00DF7D83 /* AppearanceToggle.swift */,
-				5BD50E842C14BBFE004D4A7E /* HideAdsToggle.swift */,
 				5B90B8D42A8E7A2F00185EAA /* LoginView.swift */,
 				5B90B8D12A8E6E6400185EAA /* WebView.swift */,
+				004D9E0A2FA6228F00545CFE /* SettingsView.swift */,
+				004D9E0C2FA622C300545CFE /* PagingScrollView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -76,20 +73,11 @@
 		5B5F42262AAAB04F0031658B /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				5B5F42242AAA368E0031658B /* AppConfig.swift */,
 				5B5F42272AAAB0700031658B /* settings.json */,
 				5B5F42292AAAB0870031658B /* schema.json */,
+				004D9E082FA6227200545CFE /* AppConfigStore.swift */,
 			);
 			path = Config;
-			sourceTree = "<group>";
-		};
-		5B66C9672AE7FBF400D51830 /* Icon */ = {
-			isa = PBXGroup;
-			children = (
-				5B1CC2722A95969600DF7D83 /* MoonIcon.swift */,
-				5B1CC2702A95968E00DF7D83 /* SunIcon.swift */,
-			);
-			path = Icon;
 			sourceTree = "<group>";
 		};
 		5B90B8B62A8E6D7300185EAA = {
@@ -121,6 +109,7 @@
 				5B90B8C62A8E6D7400185EAA /* Assets.xcassets */,
 				5B90B8CB2A8E6D7400185EAA /* XFree.entitlements */,
 				5B90B8C82A8E6D7400185EAA /* Preview Content */,
+				004D9E062FA6224C00545CFE /* AppearanceMode.swift */,
 			);
 			path = XFree;
 			sourceTree = "<group>";
@@ -236,18 +225,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				5B56853B2A93058500298476 /* Color+Hex.swift in Sources */,
+				004D9E0D2FA622C300545CFE /* PagingScrollView.swift in Sources */,
 				5B90B8D22A8E6E6400185EAA /* WebView.swift in Sources */,
-				5B1CC26F2A95944A00DF7D83 /* AppearanceToggle.swift in Sources */,
 				5B5685392A92FF2900298476 /* WebViewMessage.swift in Sources */,
 				5B90B8C52A8E6D7300185EAA /* ContentView.swift in Sources */,
 				5B90B8D52A8E7A2F00185EAA /* LoginView.swift in Sources */,
+				004D9E092FA6227200545CFE /* AppConfigStore.swift in Sources */,
 				5B90B8C32A8E6D7300185EAA /* XFreeApp.swift in Sources */,
-				5B1CC2732A95969600DF7D83 /* MoonIcon.swift in Sources */,
 				5B0DC3542A8FC79400268684 /* WebViewConfigurations.swift in Sources */,
-				5BD50E852C14BBFE004D4A7E /* HideAdsToggle.swift in Sources */,
-				5B5F42252AAA368E0031658B /* AppConfig.swift in Sources */,
-				5B1CC2712A95968E00DF7D83 /* SunIcon.swift in Sources */,
+				004D9E072FA6224C00545CFE /* AppearanceMode.swift in Sources */,
 				5BAB0717000000000000AB01 /* AboutView.swift in Sources */,
+				004D9E0B2FA6228F00545CFE /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -307,7 +295,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -365,7 +353,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
