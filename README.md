@@ -31,6 +31,6 @@ Column types: `forYou`, `following`, `notifications`, `profile`, `custom` (with 
 
 ## Credits
 
-Personal fork of [XDeck](https://github.com/morishin/XDeck) v2.3 by [@morishin](https://github.com/morishin), MIT. Original column layout, WebView plumbing, and ad-blocking are theirs.
+Fork of [XDeck](https://github.com/morishin/XDeck) v2.3 by [@morishin](https://github.com/morishin). Original column layout, WebView plumbing, and ad-blocking are theirs.
 
 This project is licensed under the [MIT License](LICENSE).
