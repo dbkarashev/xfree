@@ -4,6 +4,7 @@
 
 ---
 
+<!--
 ## Settings
 
 `⌘,` opens Settings.
@@ -19,6 +20,7 @@ Column types: `forYou`, `following`, `notifications`, `profile`, `custom` (with 
 - `⌘R` — refresh
 - `⌘\` — toggle compact mode
 - `⌘1`–`⌘9` — jump to column N (compact mode)
+-->
 
 ## Credits
 
