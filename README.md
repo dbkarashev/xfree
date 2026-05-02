@@ -1,40 +1,29 @@
+<h1 align="center">Foon</h1>
+<p align="center">iOS food journal with photo recognition, barcode scanning, and nutrition tracking</p>
+<p align="center"><code>made with <3 by dbkarashev</code></p>
+
+---
+
 # X Free
 
-A personal macOS client for 𝕏, built as a multi-column TweetDeck-style layout with ad-blocking.
+A personal macOS client for 𝕏 — multi-column TweetDeck-style layout with ad-blocking and a compact single-column mode.
 
-## Configuration
+## Settings
 
-`⌘,` opens the settings folder. Edit `settings.json` and restart the app.
+`⌘,` opens Settings.
 
-```json
-{
-  "$schema": "./schema.json",
-  "columnWidth": 450,
-  "columns": [
-    {
-      "type": "custom",
-      "url": "https://x.com/i/bookmarks"
-    },
-    {
-      "type": "custom",
-      "url": "https://x.com/home"
-    },
-    {
-      "type": "custom",
-      "url": "https://x.com/i/grok"
-    }
-  ]
-}
-```
+- **General** — appearance (system / light / dark), hide ads
+- **Columns** — auto vs manual width, drag to reorder, swipe to delete
 
-Supported column types: `forYou`, `following`, `notifications`, `profile`, `custom` (with `url`).
+Column types: `forYou`, `following`, `notifications`, `profile`, `custom` (with `url`). Custom URLs on `x.com` / `twitter.com` get the same ad-block treatment as built-in columns.
 
 ## Shortcuts
 
 - `⌘+` / `⌘-` — zoom
 - `⌘R` — refresh
-- `⌘,` — open settings folder
+- `⌘\` — toggle compact mode
+- `⌘1`–`⌘9` — jump to column N (compact mode)
 
 ## Credits
 
-X Free is a personal fork of [XDeck](https://github.com/morishin/XDeck) v2.3 by [@morishin](https://github.com/morishin), released under the MIT License. The foundation — column layout, WebView plumbing, ad-blocking — belongs to the original author.
+Personal fork of [XDeck](https://github.com/morishin/XDeck) v2.3 by [@morishin](https://github.com/morishin), MIT. Original column layout, WebView plumbing, and ad-blocking are theirs.
