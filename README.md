@@ -17,7 +17,9 @@ Requires macOS 14 (Sonoma) or later.
 
 Download the latest `.dmg` from the [Releases](https://github.com/dbkarashev/xfree/releases) page and drag **X Free** into your Applications folder.
 
-X Free isn't notarized, so macOS blocks the first launch with "Apple could not verify X Free is free of malware…". To allow it:
+X Free isn't notarized, so macOS blocks the first launch with "Apple could not verify X Free is free of malware…".
+
+To allow it:
 
 1. Try to open X Free once and dismiss the warning.
 2. Open **System Settings → Privacy & Security**, scroll down to the **Security** section, and click **Open Anyway** for X Free.
