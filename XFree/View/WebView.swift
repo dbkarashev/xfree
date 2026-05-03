@@ -54,7 +54,7 @@ struct WebView: NSViewRepresentable {
     @Binding var messageFromWebView: String?
     @Binding var scriptExecutionRequest: String?
 
-    @AppStorage("pageZoom") var pageZoom: Double = 1
+    @AppStorage(AppPreference.pageZoom.rawValue) var pageZoom: Double = 1
 
     var isDarkMode: Bool = false
     var refreshSwitch: Bool = false

@@ -4,10 +4,10 @@ import WebKit
 struct ContentView: View {
     @EnvironmentObject var store: AppConfigStore
 
-    @AppStorage("pageZoom") var pageZoom: Double = 1
-    @AppStorage("appearance") var appearance: AppearanceMode = .light
-    @AppStorage("hideAds") var hideAds: Bool = true
-    @AppStorage("compactMode") var compactMode: Bool = false
+    @AppStorage(AppPreference.pageZoom.rawValue) var pageZoom: Double = 1
+    @AppStorage(AppPreference.appearance.rawValue) var appearance: AppearanceMode = .light
+    @AppStorage(AppPreference.hideAds.rawValue) var hideAds: Bool = true
+    @AppStorage(AppPreference.compactMode.rawValue) var compactMode: Bool = false
 
     @State var isLoading: Bool = false
     @State var isShowingAlert: Bool = false

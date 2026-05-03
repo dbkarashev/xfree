@@ -3,8 +3,8 @@ import AppKit
 
 @main
 struct XFreeApp: App {
-    @AppStorage("appearance") private var appearance: AppearanceMode = .light
-    @AppStorage("compactMode") private var compactMode: Bool = false
+    @AppStorage(AppPreference.appearance.rawValue) private var appearance: AppearanceMode = .light
+    @AppStorage(AppPreference.compactMode.rawValue) private var compactMode: Bool = false
     @StateObject private var configStore = AppConfigStore()
 
     static let compactSize = NSSize(width: 420, height: 760)
@@ -80,7 +80,7 @@ private struct LogOutMenuButton: View {
 
 private struct ToggleCompactCommand: View {
     @ObservedObject var store: AppConfigStore
-    @AppStorage("compactMode") private var compactMode: Bool = false
+    @AppStorage(AppPreference.compactMode.rawValue) private var compactMode: Bool = false
 
     var body: some View {
         Button("Toggle Compact Mode") { compactMode.toggle() }

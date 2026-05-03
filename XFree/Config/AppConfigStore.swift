@@ -2,6 +2,21 @@ import SwiftUI
 import Combine
 import WebKit
 
+/// Every UserDefaults key we own, in one place. `@AppStorage` declarations across the app
+/// reference these via `.rawValue`, and `resetAll()` wipes them in one call so the reset path
+/// doesn't keep a parallel list in sync.
+enum AppPreference: String, CaseIterable {
+    case appearance
+    case compactMode
+    case hideAds
+    case pageZoom
+
+    static func resetAll() {
+        let defaults = UserDefaults.standard
+        for pref in allCases { defaults.removeObject(forKey: pref.rawValue) }
+    }
+}
+
 enum WidthMode: String, Codable, CaseIterable, Identifiable {
     case auto
     case manual
@@ -260,6 +275,10 @@ final class AppConfigStore: ObservableObject {
         columnWidth = bundled?.columnWidth ?? 450
         columns = bundled?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
         compactShortcut = bundled?.compactShortcut ?? .defaultCompact
+        // Skip the 0.3s debounce — reset is one-shot, we want it on disk before the user can
+        // possibly quit the app. Cancel the pending scheduled save so we don't write twice.
+        saveTask?.cancel()
+        saveNow()
     }
 
     /// Drop x.com cookies, localStorage, IndexedDB, caches; evict cached x.com WebViews; clear

@@ -16,8 +16,8 @@ struct SettingsView: View {
 
 private struct GeneralSettingsView: View {
     @EnvironmentObject private var store: AppConfigStore
-    @AppStorage("appearance") private var appearance: AppearanceMode = .light
-    @AppStorage("hideAds") private var hideAds: Bool = true
+    @AppStorage(AppPreference.appearance.rawValue) private var appearance: AppearanceMode = .light
+    @AppStorage(AppPreference.hideAds.rawValue) private var hideAds: Bool = true
 
     var body: some View {
         Form {
@@ -173,6 +173,8 @@ struct PanelWindowAccessor: NSViewRepresentable {
                 context.coordinator.observeTitle(window: window, expected: title)
             }
             if centerOnOpen {
+                // Disable autosave once, here. The visibility observer just recenters; we don't
+                // need to keep stomping on the autosave name on every show.
                 window.setFrameAutosaveName("")
                 window.center()
                 context.coordinator.observeVisibility(window: window)
@@ -202,10 +204,7 @@ struct PanelWindowAccessor: NSViewRepresentable {
         func observeVisibility(window: NSWindow) {
             visibilityObserver = window.observe(\.isVisible, options: [.new]) { w, change in
                 guard change.newValue == true else { return }
-                DispatchQueue.main.async {
-                    w.setFrameAutosaveName("")
-                    w.center()
-                }
+                w.center()
             }
         }
 
@@ -228,10 +227,7 @@ func confirmRestoreDefaults(store: AppConfigStore) {
     alert.addButton(withTitle: "Cancel")
     alert.buttons.first?.hasDestructiveAction = true
     guard alert.runModal() == .alertFirstButtonReturn else { return }
-    let defaults = UserDefaults.standard
-    for key in ["appearance", "hideAds", "compactMode", "pageZoom"] {
-        defaults.removeObject(forKey: key)
-    }
+    AppPreference.resetAll()
     store.resetToDefaults()
 }
 
@@ -253,7 +249,7 @@ func confirmLogOut(store: AppConfigStore) {
 
 private struct ColumnsSettingsView: View {
     @EnvironmentObject private var store: AppConfigStore
-    @AppStorage("compactMode") private var compactMode: Bool = false
+    @AppStorage(AppPreference.compactMode.rawValue) private var compactMode: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -313,7 +309,7 @@ private struct ColumnsSettingsView: View {
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
             .scrollDisabled(true)
-            .frame(height: store.widthMode == .manual ? 220 : 200)
+            .fixedSize(horizontal: false, vertical: true)
 
             Divider()
 
