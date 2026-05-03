@@ -198,7 +198,7 @@ final class AppConfigStore: ObservableObject {
     init() {
         let stored = Self.load()
         self.widthMode = stored?.widthMode ?? .manual
-        self.columnWidth = stored?.columnWidth ?? 450
+        self.columnWidth = stored?.columnWidth ?? 400
         self.columns = stored?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
         self.compactShortcut = stored?.compactShortcut ?? .defaultCompact
     }
@@ -272,7 +272,7 @@ final class AppConfigStore: ObservableObject {
         WebViewCache.shared.evictAll()
         let bundled = Self.loadBundledDefaults()
         widthMode = bundled?.widthMode ?? .manual
-        columnWidth = bundled?.columnWidth ?? 450
+        columnWidth = bundled?.columnWidth ?? 400
         columns = bundled?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
         compactShortcut = bundled?.compactShortcut ?? .defaultCompact
         // Skip the 0.3s debounce — reset is one-shot, we want it on disk before the user can

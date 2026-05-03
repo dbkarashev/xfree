@@ -22,10 +22,11 @@ struct XFreeApp: App {
                 .background(DeckWindowAccessor(configStore: configStore))
                 .onAppear {
                     DispatchQueue.main.async {
-                        applyCompactMode(compactMode)
+                        applyEffectiveCompactMode()
                     }
                 }
-                .onChange(of: compactMode) { _, newValue in applyCompactMode(newValue) }
+                .onChange(of: compactMode) { _, _ in applyEffectiveCompactMode() }
+                .onChange(of: configStore.loggedInUsername) { _, _ in applyEffectiveCompactMode() }
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
@@ -92,6 +93,14 @@ private struct ToggleCompactCommand: View {
 }
 
 private extension XFreeApp {
+    /// Compact is gated on login: x.com's login page renders poorly at 420 px wide, so we
+    /// always show LoginView in expanded layout even if the user's stored preference is on.
+    /// Stored compactMode is preserved either way; effective mode follows login state.
+    func applyEffectiveCompactMode() {
+        let effective = compactMode && configStore.loggedInUsername != nil
+        applyCompactMode(effective)
+    }
+
     func applyCompactMode(_ on: Bool) {
         guard let window = Self.deckWindow else { return }
         relaxConstraints(window)

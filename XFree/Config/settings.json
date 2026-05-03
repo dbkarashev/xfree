@@ -1,6 +1,6 @@
 {
   "$schema": "./schema.json",
-  "columnWidth": 450,
+  "columnWidth": 400,
   "columns": [
     {
       "type": "custom",

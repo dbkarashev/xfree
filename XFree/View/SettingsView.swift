@@ -252,9 +252,12 @@ private struct ColumnsSettingsView: View {
     @AppStorage(AppPreference.compactMode.rawValue) private var compactMode: Bool = false
 
     var body: some View {
+        let isLoggedIn = store.loggedInUsername != nil
         VStack(spacing: 0) {
             Form {
                 Toggle("Compact mode", isOn: $compactMode)
+                    .disabled(!isLoggedIn)
+                    .help(isLoggedIn ? "" : "Sign in to use compact mode.")
 
                 LabeledContent("Shortcut") {
                     HStack(spacing: 6) {

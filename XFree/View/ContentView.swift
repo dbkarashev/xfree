@@ -148,7 +148,10 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             let columnCount = store.columns.count
-            let isCompact = compactMode
+            // Effective compact = stored preference AND signed in. x.com's login page renders
+            // poorly at compact width, so we always show LoginView in expanded layout regardless
+            // of the user's compact preference.
+            let isCompact = compactMode && store.loggedInUsername != nil
             let baseWidth: CGFloat = {
                 if isCompact { return geometry.size.width }
                 switch store.widthMode {
