@@ -57,7 +57,7 @@ private struct ColumnsSettingsView: View {
                                     get: { Double(store.columnWidth) },
                                     set: { store.columnWidth = Int($0) }
                                 ),
-                                in: 300...700,
+                                in: 400...700,
                                 step: 25
                             )
                             Text("\(store.columnWidth) px")

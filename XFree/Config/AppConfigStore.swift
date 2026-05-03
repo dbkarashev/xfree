@@ -16,7 +16,7 @@ enum WidthMode: String, Codable, CaseIterable, Identifiable {
 }
 
 final class AppConfigStore: ObservableObject {
-    static let minColumnWidth: CGFloat = 280
+    static let minColumnWidth: CGFloat = 400
 
     @Published var widthMode: WidthMode { didSet { scheduleSave() } }
     @Published var columnWidth: Int { didSet { scheduleSave() } }

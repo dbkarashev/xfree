@@ -126,6 +126,8 @@ private extension XFreeApp {
     }
 
     func resize(window: NSWindow, to size: NSSize) {
+        DeckWindowSupport.inProgrammaticResize = true
+        defer { DeckWindowSupport.inProgrammaticResize = false }
         var frame = window.frame
         let topLeftY = frame.origin.y + frame.size.height
         frame.size = size
@@ -149,12 +151,28 @@ private struct DeckWindowAccessor: NSViewRepresentable {
 }
 
 private enum DeckWindowSupport {
+    fileprivate static var inProgrammaticResize = false
+    fileprivate static var mouseIsDown = false
+
     private static var hotkeyInstalled = false
+    private static var mouseTrackerInstalled = false
     private static var resizeDelegate: CompactResizeDelegate?
 
     static func attach(to window: NSWindow) {
         installHotkeyIfNeeded()
+        installMouseTrackerIfNeeded()
         installResizeDelegate(for: window)
+    }
+
+    /// We snap origin back on system-initiated moves (Sequoia desktop tile), but only when the
+    /// user isn't actively dragging. Track mouse button state app-wide to tell those apart.
+    private static func installMouseTrackerIfNeeded() {
+        guard !mouseTrackerInstalled else { return }
+        mouseTrackerInstalled = true
+        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { event in
+            mouseIsDown = (event.type == .leftMouseDown)
+            return event
+        }
     }
 
     /// SwiftUI's `keyboardShortcut("/")` is character-based, so it dies on non-Latin layouts where
@@ -189,10 +207,12 @@ private enum DeckWindowSupport {
 private final class CompactResizeDelegate: NSObject, NSWindowDelegate {
     weak var window: NSWindow?
     private weak var forward: NSWindowDelegate?
+    private var lastUserOrigin: NSPoint
 
     init(window: NSWindow, forward: NSWindowDelegate?) {
         self.window = window
         self.forward = forward
+        self.lastUserOrigin = window.frame.origin
         super.init()
     }
 
@@ -201,11 +221,12 @@ private final class CompactResizeDelegate: NSObject, NSWindowDelegate {
         if let f = forward, f.responds(to: #selector(NSWindowDelegate.windowWillResize(_:to:))) {
             size = f.windowWillResize?(sender, to: size) ?? size
         }
+        if DeckWindowSupport.inProgrammaticResize { return size }
         guard UserDefaults.standard.bool(forKey: "compactMode") else { return size }
-        return NSSize(
-            width: XFreeApp.compactSize.width,
-            height: max(XFreeApp.compactMinHeight, size.height)
-        )
+        let height: CGFloat = sender.inLiveResize
+            ? max(XFreeApp.compactMinHeight, size.height)
+            : sender.frame.height
+        return NSSize(width: XFreeApp.compactSize.width, height: height)
     }
 
     func windowShouldZoom(_ window: NSWindow, toFrame newFrame: NSRect) -> Bool {
@@ -214,6 +235,32 @@ private final class CompactResizeDelegate: NSObject, NSWindowDelegate {
             return f.windowShouldZoom?(window, toFrame: newFrame) ?? true
         }
         return true
+    }
+
+    /// AppKit has no `windowWillMove(_:to:)`, so we can't preempt the OS desktop-tile origin
+    /// change. Instead detect after the fact: if the move happened while the mouse is up (i.e.
+    /// not a user drag), it's the OS — snap back to the last user-authorized origin.
+    func windowDidMove(_ notification: Notification) {
+        if let f = forward, f.responds(to: #selector(NSWindowDelegate.windowDidMove(_:))) {
+            f.windowDidMove?(notification)
+        }
+        guard let window = notification.object as? NSWindow else { return }
+        if DeckWindowSupport.inProgrammaticResize {
+            lastUserOrigin = window.frame.origin
+            return
+        }
+        if DeckWindowSupport.mouseIsDown {
+            lastUserOrigin = window.frame.origin
+            return
+        }
+        guard UserDefaults.standard.bool(forKey: "compactMode") else {
+            lastUserOrigin = window.frame.origin
+            return
+        }
+        guard window.frame.origin != lastUserOrigin else { return }
+        DeckWindowSupport.inProgrammaticResize = true
+        window.setFrameOrigin(lastUserOrigin)
+        DeckWindowSupport.inProgrammaticResize = false
     }
 
     override func responds(to aSelector: Selector!) -> Bool {
