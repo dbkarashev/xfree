@@ -13,8 +13,6 @@
 
 ## Install
 
-<img src="assets/icon.png" alt="X Free icon" width="80">
-
 Download the latest `.dmg` from the [Releases](https://github.com/dbkarashev/xfree/releases) page and drag **X Free** into your Applications folder.
 
 X Free isn't notarized, so macOS blocks the first launch with "Apple could not verify X Free is free of malware…".
