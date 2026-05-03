@@ -209,6 +209,16 @@ final class AppConfigStore: ObservableObject {
         return stored
     }
 
+    /// Load shipped defaults straight from the app bundle. Used by `resetToDefaults` so users
+    /// get the same column set new installs get, not whatever fallback `init` carries.
+    private static func loadBundledDefaults() -> Stored? {
+        guard let path = Bundle.main.path(forResource: "settings", ofType: "json"),
+              let data = try? Data(contentsOf: URL(filePath: path)),
+              let stored = try? JSONDecoder().decode(Stored.self, from: data)
+        else { return nil }
+        return stored
+    }
+
     private func scheduleSave() {
         saveTask?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.saveNow() }
@@ -239,15 +249,17 @@ final class AppConfigStore: ObservableObject {
         WebViewCache.shared.evict(id.uuidString)
     }
 
-    /// Reset everything we own to its default value. Doesn't touch session state
-    /// (`loggedInUsername`, x.com cookies) — that's not a setting.
+    /// Reset everything we own to its default value. Pulls the column set from the bundled
+    /// settings.json so the result matches what a fresh install would get. Doesn't touch
+    /// session state (`loggedInUsername`, x.com cookies) — that's not a setting.
     @MainActor
     func resetToDefaults() {
         WebViewCache.shared.evictAll()
-        widthMode = .manual
-        columnWidth = 450
-        columns = [Column(type: .custom, url: "https://x.com/home")]
-        compactShortcut = .defaultCompact
+        let bundled = Self.loadBundledDefaults()
+        widthMode = bundled?.widthMode ?? .manual
+        columnWidth = bundled?.columnWidth ?? 450
+        columns = bundled?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
+        compactShortcut = bundled?.compactShortcut ?? .defaultCompact
     }
 
     /// Drop x.com cookies, localStorage, IndexedDB, caches; evict cached x.com WebViews; clear
