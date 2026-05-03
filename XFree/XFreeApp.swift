@@ -3,15 +3,11 @@ import AppKit
 
 @main
 struct XFreeApp: App {
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = false
     @AppStorage("appearance") private var appearance: AppearanceMode = .light
     @AppStorage("compactMode") private var compactMode: Bool = false
-    @AppStorage("expandedWidth") private var expandedWidth: Double = 1440
-    @AppStorage("expandedHeight") private var expandedHeight: Double = 900
     @StateObject private var configStore = AppConfigStore()
 
     static let compactSize = NSSize(width: 420, height: 760)
-    static let compactWidthThreshold: CGFloat = 600
     static let compactMinHeight: CGFloat = 400
     static let expandedMinSize = NSSize(width: 460, height: 600)
 
@@ -27,10 +23,6 @@ struct XFreeApp: App {
                 .onAppear {
                     DispatchQueue.main.async {
                         applyCompactMode(compactMode)
-                        if !hasLaunchedBefore {
-                            hasLaunchedBefore = true
-                            if !compactMode { Self.deckWindow?.zoom(nil) }
-                        }
                     }
                 }
                 .onChange(of: compactMode) { _, newValue in applyCompactMode(newValue) }
@@ -81,12 +73,7 @@ private extension XFreeApp {
         guard let window = Self.deckWindow else { return }
         relaxConstraints(window)
         if on {
-            let frame = window.frame
-            if frame.width >= Self.compactWidthThreshold {
-                expandedWidth = Double(frame.width)
-                expandedHeight = Double(frame.height)
-            }
-            if frame.size != Self.compactSize {
+            if window.frame.size != Self.compactSize {
                 resize(window: window, to: Self.compactSize)
             }
             let w = Self.compactSize.width
@@ -94,13 +81,14 @@ private extension XFreeApp {
             window.maxSize = NSSize(width: w, height: CGFloat.greatestFiniteMagnitude)
             disableFullScreenAffordances(window)
         } else {
-            let restored = NSSize(width: expandedWidth, height: expandedHeight)
-            if window.frame.size != restored {
-                resize(window: window, to: restored)
-            }
             window.minSize = Self.expandedMinSize
             window.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
             enableFullScreenAffordances(window)
+            if !window.isZoomed {
+                DeckWindowSupport.inProgrammaticResize = true
+                window.zoom(nil)
+                DeckWindowSupport.inProgrammaticResize = false
+            }
         }
     }
 
