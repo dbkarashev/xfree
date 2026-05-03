@@ -1,4 +1,7 @@
-<h1 align="center">X Free</h1>
+<h1 align="center">
+    <img src="assets/icon.png" alt="X Free" width="96"><br>
+    X Free
+</h1>
 <p align="center">Your favorite 𝕏 client for macOS, now in compact mode</p>
 
 <p align="center"><img src="assets/preview.png" alt="X Free" width="800"></p>
