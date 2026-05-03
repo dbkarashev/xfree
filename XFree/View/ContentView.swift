@@ -59,6 +59,8 @@ struct ContentView: View {
             return scripts
         }()
 
+        let cacheKey = column.id.uuidString
+
         switch column.type {
         case .forYou:
             WebView(
@@ -68,7 +70,8 @@ struct ContentView: View {
                 isDarkMode: isDarkMode,
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
-                    onLoadScripts: baseConfiguration + [.clickForYouTab])
+                    onLoadScripts: baseConfiguration + [.clickForYouTab]),
+                cacheKey: cacheKey
             ).frame(width: width)
         case .following:
             WebView(
@@ -78,7 +81,8 @@ struct ContentView: View {
                 isDarkMode: isDarkMode,
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
-                    onLoadScripts: baseConfiguration + [.clickFollowingTab])
+                    onLoadScripts: baseConfiguration + [.clickFollowingTab]),
+                cacheKey: cacheKey
             ).frame(width: width)
         case .notifications:
             WebView(
@@ -89,7 +93,8 @@ struct ContentView: View {
                 isDarkMode: isDarkMode,
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
-                    onLoadScripts: baseConfiguration)
+                    onLoadScripts: baseConfiguration),
+                cacheKey: cacheKey
             ).frame(width: width)
         case .profile:
             if let url = Binding(profileUrl) {
@@ -101,7 +106,8 @@ struct ContentView: View {
                     isDarkMode: isDarkMode,
                     refreshSwitch: refreshSwitch,
                     configuration: WebViewConfigurations.makeConfiguration(
-                        onLoadScripts: baseConfiguration)
+                        onLoadScripts: baseConfiguration),
+                    cacheKey: cacheKey
                 ).frame(width: width)
             }
         case .custom:
@@ -113,7 +119,8 @@ struct ContentView: View {
                     isDarkMode: isDarkMode,
                     refreshSwitch: refreshSwitch,
                     configuration: WebViewConfigurations.makeConfiguration(
-                        onLoadScripts: baseConfiguration)
+                        onLoadScripts: baseConfiguration),
+                    cacheKey: cacheKey
                 ).frame(width: width)
             }
         }

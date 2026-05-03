@@ -2,6 +2,27 @@ import SwiftUI
 import WebKit
 import AppKit
 
+/// Per-column WKWebView cache. SwiftUI rebuilds the view tree on compact toggle and frame
+/// changes; without an external cache each rebuild creates a fresh WKWebView and reloads the
+/// page. We key by stable column id and let the same WKWebView ride through layout swaps.
+final class WebViewCache {
+    static let shared = WebViewCache()
+
+    private var cache: [String: WKWebView] = [:]
+
+    func webView(forKey key: String, factory: () -> WKWebView) -> WKWebView {
+        if let cached = cache[key] { return cached }
+        let fresh = factory()
+        cache[key] = fresh
+        return fresh
+    }
+
+    func evict(_ key: String) {
+        cache[key]?.stopLoading()
+        cache.removeValue(forKey: key)
+    }
+}
+
 struct WebView: NSViewRepresentable {
     typealias NSViewType = WKWebView
 
@@ -16,25 +37,20 @@ struct WebView: NSViewRepresentable {
     var isDarkMode: Bool = false
     var refreshSwitch: Bool = false
     var configuration: WKWebViewConfiguration? = nil
+    var cacheKey: String? = nil
 
     func makeNSView(context: Context) -> WKWebView {
-        let webView: WKWebView
-        if let configuration = configuration {
-            webView = HorizontalScrollSwallowingWebView(frame: .zero, configuration: configuration)
-        } else {
-            webView = HorizontalScrollSwallowingWebView()
+        if let cacheKey {
+            let webView = WebViewCache.shared.webView(forKey: cacheKey) {
+                makeFreshWebView(context: context)
+            }
+            // Cached view is being parented to a new SwiftUI host; detach from the old one first
+            // and rebind delegates/handler to the freshly created Coordinator.
+            webView.removeFromSuperview()
+            attachCoordinator(webView, context: context)
+            return webView
         }
-        // Pretend Safari because 𝕏 bans the user agent of WebView
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15"
-        webView.navigationDelegate = context.coordinator
-        webView.uiDelegate = context.coordinator
-        webView.underPageBackgroundColor = isDarkMode ? .black : .white
-
-        NightModeCookie.writeFireAndForget(isDark: isDarkMode)
-
-        let request = URLRequest(url: url)
-        webView.load(request)
-        return webView
+        return makeFreshWebView(context: context)
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
@@ -42,14 +58,12 @@ struct WebView: NSViewRepresentable {
         if webView.underPageBackgroundColor != expectedUnderPageColor {
             webView.underPageBackgroundColor = expectedUnderPageColor
         }
-        // Reload when caller swapped the URL out from under us (e.g. column URL edited in Settings).
+        // Reload only when the caller swapped the URL out from under us (e.g. column URL edited
+        // in Settings). Don't react to webView.url drifting via in-page SPA navigation — that's
+        // the user clicking around on x.com, not a request to reload.
         if context.coordinator.lastRequestedUrl != url {
             context.coordinator.lastRequestedUrl = url
-            context.coordinator.lastUrl = url
             webView.load(URLRequest(url: url))
-        } else if let current = webView.url, current != context.coordinator.lastUrl {
-            context.coordinator.lastUrl = current
-            webView.load(URLRequest(url: current))
         }
         if refreshSwitch != context.coordinator.refreshSwitch {
             webView.load(URLRequest(url: url))
@@ -67,6 +81,30 @@ struct WebView: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator {
         return Coordinator(owner: self)
+    }
+
+    private func makeFreshWebView(context: Context) -> WKWebView {
+        let webView: WKWebView
+        if let configuration {
+            webView = HorizontalScrollSwallowingWebView(frame: .zero, configuration: configuration)
+        } else {
+            webView = HorizontalScrollSwallowingWebView()
+        }
+        // Pretend Safari because 𝕏 bans the user agent of WebView
+        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15"
+        webView.underPageBackgroundColor = isDarkMode ? .black : .white
+        attachCoordinator(webView, context: context)
+        NightModeCookie.writeFireAndForget(isDark: isDarkMode)
+        webView.load(URLRequest(url: url))
+        return webView
+    }
+
+    private func attachCoordinator(_ webView: WKWebView, context: Context) {
+        webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
+        let ucc = webView.configuration.userContentController
+        ucc.removeAllScriptMessageHandlers()
+        ucc.add(context.coordinator, name: WebViewConfigurations.handlerName)
     }
 }
 
@@ -86,17 +124,14 @@ private final class HorizontalScrollSwallowingWebView: WKWebView {
 
 class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private let owner: WebView
-    var lastUrl: URL
     var lastRequestedUrl: URL
     var refreshSwitch: Bool
 
     init(owner: WebView) {
         self.owner = owner
-        self.lastUrl = owner.url
         self.lastRequestedUrl = owner.url
         self.refreshSwitch = false
         super.init()
-        owner.configuration?.userContentController.add(self, name: WebViewConfigurations.handlerName)
     }
 
     // MARK: WKNavigationDelegate

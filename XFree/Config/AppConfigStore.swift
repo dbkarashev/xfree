@@ -141,6 +141,7 @@ final class AppConfigStore: ObservableObject {
 
     func removeColumn(_ id: UUID) {
         columns.removeAll { $0.id == id }
+        WebViewCache.shared.evict(id.uuidString)
     }
 
     func moveColumn(from source: IndexSet, to destination: Int) {
