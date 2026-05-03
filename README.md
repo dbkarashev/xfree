@@ -6,9 +6,9 @@
 ---
 
 <p align="center">
-    <a href="https://swift.org"><img src="https://img.shields.io/badge/Built_with-Swift-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Built with Swift"></a>
-    <a href="https://github.com/dbkarashev/xfree/releases/latest"><img src="https://img.shields.io/github/v/release/dbkarashev/xfree?style=for-the-badge&color=8957E5&label=Release" alt="Latest Release"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2E8B57?style=for-the-badge" alt="MIT License"></a>
+    <a href="https://swift.org"><img src="https://img.shields.io/badge/Built_with-Swift-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Built with Swift"></a>&nbsp;&nbsp;
+    <a href="https://github.com/dbkarashev/xfree/releases/latest"><img src="https://img.shields.io/badge/Release-v1.0.0-0969DA?style=for-the-badge" alt="Latest Release"></a>&nbsp;&nbsp;
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-1F883D?style=for-the-badge" alt="MIT License"></a>
 </p>
 
 ## Install
