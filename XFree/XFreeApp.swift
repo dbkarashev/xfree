@@ -40,10 +40,7 @@ struct XFreeApp: App {
                 Divider()
             }
             CommandGroup(after: .windowSize) {
-                Button("Toggle Compact Mode") {
-                    compactMode.toggle()
-                }
-                .keyboardShortcut("/", modifiers: .option)
+                ToggleCompactCommand(store: configStore)
             }
         }
 
@@ -78,6 +75,19 @@ private struct LogOutMenuButton: View {
     var body: some View {
         Button("Log Out") { confirmLogOut(store: store) }
             .disabled(store.loggedInUsername == nil)
+    }
+}
+
+private struct ToggleCompactCommand: View {
+    @ObservedObject var store: AppConfigStore
+    @AppStorage("compactMode") private var compactMode: Bool = false
+
+    var body: some View {
+        Button("Toggle Compact Mode") { compactMode.toggle() }
+            .keyboardShortcut(
+                store.compactShortcut.keyEquivalent,
+                modifiers: store.compactShortcut.eventModifiers
+            )
     }
 }
 
@@ -138,12 +148,15 @@ private extension XFreeApp {
 }
 
 private struct DeckWindowAccessor: NSViewRepresentable {
+    @EnvironmentObject var configStore: AppConfigStore
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
+        let store = configStore
         DispatchQueue.main.async { [weak view] in
             guard let window = view?.window else { return }
             XFreeApp.deckWindow = window
-            DeckWindowSupport.attach(to: window)
+            DeckWindowSupport.attach(to: window, configStore: store)
         }
         return view
     }
@@ -151,16 +164,21 @@ private struct DeckWindowAccessor: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
-private enum DeckWindowSupport {
+enum DeckWindowSupport {
     fileprivate static var inProgrammaticResize = false
     fileprivate static var mouseIsDown = false
+
+    /// Set by `ShortcutRecorderField` while it's listening for a new chord. The compact-mode
+    /// hotkey monitor checks this so recording the current shortcut doesn't toggle the deck as
+    /// a side effect.
+    static var isRecordingShortcut = false
 
     private static var hotkeyInstalled = false
     private static var mouseTrackerInstalled = false
     private static var resizeDelegate: CompactResizeDelegate?
 
-    static func attach(to window: NSWindow) {
-        installHotkeyIfNeeded()
+    static func attach(to window: NSWindow, configStore: AppConfigStore) {
+        installHotkeyIfNeeded(configStore: configStore)
         installMouseTrackerIfNeeded()
         installResizeDelegate(for: window)
     }
@@ -176,16 +194,18 @@ private enum DeckWindowSupport {
         }
     }
 
-    /// SwiftUI's `keyboardShortcut("/")` is character-based, so it dies on non-Latin layouts where
-    /// the slash glyph sits on a different physical key. Watch the physical slash key
-    /// (kVK_ANSI_Slash = 0x2C) instead and consume the event so the SwiftUI shortcut doesn't
-    /// double-fire on Latin layouts.
-    private static func installHotkeyIfNeeded() {
+    /// SwiftUI's `keyboardShortcut` is character-based, so non-Latin layouts miss non-letter
+    /// keys (the user's `⌥/` would land on a different physical key). Watch physical key codes
+    /// instead and consume the event so any matching SwiftUI shortcut doesn't double-fire.
+    /// Binding is read live from the store so the in-Settings recorder rebinds the hotkey
+    /// without restarting the app.
+    private static func installHotkeyIfNeeded(configStore: AppConfigStore) {
         guard !hotkeyInstalled else { return }
         hotkeyInstalled = true
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            guard mods == .option, event.keyCode == 0x2C else { return event }
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak configStore] event in
+            guard let configStore else { return event }
+            guard !DeckWindowSupport.isRecordingShortcut else { return event }
+            guard configStore.compactShortcut.matches(event: event) else { return event }
             let key = "compactMode"
             UserDefaults.standard.set(!UserDefaults.standard.bool(forKey: key), forKey: key)
             return nil

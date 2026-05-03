@@ -16,12 +16,94 @@ enum WidthMode: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Layout-independent keyboard shortcut binding.
+///
+/// `keyCode` is the physical kVK_* code — same key on every keyboard layout. `modifierFlagsRaw`
+/// is the masked NSEvent.ModifierFlags. `displayCharacter` is a snapshot of the glyph that was
+/// printed on the user's current layout when they recorded the binding; it's used for UI only,
+/// matching against incoming events uses keyCode + modifiers.
+struct ShortcutBinding: Codable, Hashable {
+    let keyCode: UInt16
+    let modifierFlagsRaw: UInt
+    let displayCharacter: String
+
+    var modifierFlags: NSEvent.ModifierFlags {
+        NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)
+    }
+
+    func matches(event: NSEvent) -> Bool {
+        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        return event.keyCode == keyCode && mods.rawValue == modifierFlagsRaw
+    }
+
+    /// `⌥/`, `⇧⌃⌘F12`, etc. Matches Apple's compact shortcut formatting.
+    var displayString: String {
+        var parts: [String] = []
+        if modifierFlags.contains(.control) { parts.append("⌃") }
+        if modifierFlags.contains(.option) { parts.append("⌥") }
+        if modifierFlags.contains(.shift) { parts.append("⇧") }
+        if modifierFlags.contains(.command) { parts.append("⌘") }
+        parts.append(Self.specialKeyDisplay[keyCode] ?? displayCharacter.uppercased())
+        return parts.joined()
+    }
+
+    /// kVK_ANSI_Slash + .option — what `⌥/` resolves to on a US keyboard.
+    static let defaultCompact = ShortcutBinding(
+        keyCode: 0x2C,
+        modifierFlagsRaw: NSEvent.ModifierFlags.option.rawValue,
+        displayCharacter: "/"
+    )
+
+    /// SwiftUI-flavored equivalents for the menu-item shortcut hint. Special keys map onto the
+    /// `KeyEquivalent` constants; everything else falls back to the snapshotted character.
+    var keyEquivalent: KeyEquivalent {
+        switch keyCode {
+        case 0x24, 0x4C: return .return
+        case 0x30: return .tab
+        case 0x31: return .space
+        case 0x33: return .delete
+        case 0x35: return .escape
+        case 0x75: return .deleteForward
+        case 0x7B: return .leftArrow
+        case 0x7C: return .rightArrow
+        case 0x7D: return .downArrow
+        case 0x7E: return .upArrow
+        default: return KeyEquivalent(displayCharacter.first ?? "/")
+        }
+    }
+
+    var eventModifiers: EventModifiers {
+        var m: EventModifiers = []
+        if modifierFlags.contains(.command) { m.insert(.command) }
+        if modifierFlags.contains(.option) { m.insert(.option) }
+        if modifierFlags.contains(.control) { m.insert(.control) }
+        if modifierFlags.contains(.shift) { m.insert(.shift) }
+        return m
+    }
+
+    /// `event.charactersIgnoringModifiers` returns garbage for arrows/function/whitespace; map
+    /// the kVK_* codes we care about to readable glyphs. Anything not in the map falls back to
+    /// the snapshotted `displayCharacter`.
+    private static let specialKeyDisplay: [UInt16: String] = [
+        0x24: "↩", 0x4C: "↩",                        // return, numpad enter
+        0x30: "⇥",                                    // tab
+        0x31: "Space",                                // space
+        0x33: "⌫", 0x75: "⌦",                        // delete, forward delete
+        0x73: "↖", 0x77: "↘", 0x74: "⇞", 0x79: "⇟",  // home, end, page up, page down
+        0x7B: "←", 0x7C: "→", 0x7D: "↓", 0x7E: "↑",  // arrows
+        0x7A: "F1",  0x78: "F2",  0x63: "F3",  0x76: "F4",
+        0x60: "F5",  0x61: "F6",  0x62: "F7",  0x64: "F8",
+        0x65: "F9",  0x6D: "F10", 0x67: "F11", 0x6F: "F12"
+    ]
+}
+
 final class AppConfigStore: ObservableObject {
     static let minColumnWidth: CGFloat = 400
 
     @Published var widthMode: WidthMode { didSet { scheduleSave() } }
     @Published var columnWidth: Int { didSet { scheduleSave() } }
     @Published var columns: [Column] { didSet { scheduleSave() } }
+    @Published var compactShortcut: ShortcutBinding { didSet { scheduleSave() } }
 
     /// Source of truth: re-detected on every launch by the `findUserName` script that runs in the
     /// LoginView WebView. Not persisted — cookies in WKWebsiteDataStore are persistent enough,
@@ -93,6 +175,7 @@ final class AppConfigStore: ObservableObject {
         var widthMode: WidthMode?
         var columnWidth: Int?
         var columns: [Column]
+        var compactShortcut: ShortcutBinding?
     }
 
     private var saveTask: DispatchWorkItem?
@@ -102,6 +185,7 @@ final class AppConfigStore: ObservableObject {
         self.widthMode = stored?.widthMode ?? .manual
         self.columnWidth = stored?.columnWidth ?? 450
         self.columns = stored?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
+        self.compactShortcut = stored?.compactShortcut ?? .defaultCompact
     }
 
     private static func ensureFiles() {
@@ -133,7 +217,12 @@ final class AppConfigStore: ObservableObject {
     }
 
     private func saveNow() {
-        let payload = Stored(widthMode: widthMode, columnWidth: columnWidth, columns: columns)
+        let payload = Stored(
+            widthMode: widthMode,
+            columnWidth: columnWidth,
+            columns: columns,
+            compactShortcut: compactShortcut
+        )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let data = try? encoder.encode(payload) else { return }

@@ -47,6 +47,107 @@ private struct GeneralSettingsView: View {
     }
 }
 
+/// Returns nil if the candidate is acceptable, or a short message explaining why it isn't.
+/// Rules: at least one modifier; not a system-reserved combo; not one of our hardcoded ones.
+func validateCompactShortcut(_ candidate: ShortcutBinding) -> String? {
+    let mods = candidate.modifierFlags
+    if mods.isEmpty {
+        return "Use at least one modifier key"
+    }
+
+    let cmdOnly = mods == .command
+    let lower = candidate.displayCharacter.lowercased()
+
+    if cmdOnly, ["q", "w", ","].contains(lower) {
+        return "Reserved by macOS"
+    }
+    if cmdOnly {
+        if lower == "r" { return "Already used for Refresh" }
+        if ["+", "-", "="].contains(candidate.displayCharacter) { return "Already used for Zoom" }
+        if let n = Int(candidate.displayCharacter), (1...9).contains(n) {
+            return "Already used to jump to column \(n)"
+        }
+    }
+    return nil
+}
+
+/// Apple-style inline shortcut recorder: a bordered button that becomes "live" on click,
+/// captures the next valid keypress, validates it, and commits on success. Esc cancels;
+/// clicking the button while recording toggles back out.
+///
+/// Sets `DeckWindowSupport.isRecordingShortcut` so the live compact-mode hotkey monitor
+/// pauses while a new chord is being captured — otherwise binding the current shortcut to a
+/// new value would also toggle the deck on the way past.
+struct ShortcutRecorderField: View {
+    @Binding var binding: ShortcutBinding
+    /// Returns nil on success, an error message to display otherwise.
+    let onValidate: (ShortcutBinding) -> String?
+
+    @State private var isRecording = false
+    @State private var monitor: Any?
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Button {
+                isRecording ? stopRecording() : startRecording()
+            } label: {
+                Text(isRecording ? "Press shortcut…" : binding.displayString)
+                    .frame(minWidth: 110)
+                    .monospaced()
+            }
+            .buttonStyle(.bordered)
+            .tint(isRecording ? .accentColor : nil)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+        .onDisappear { stopRecording() }
+    }
+
+    private func startRecording() {
+        isRecording = true
+        errorMessage = nil
+        DeckWindowSupport.isRecordingShortcut = true
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            handle(event)
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        isRecording = false
+        DeckWindowSupport.isRecordingShortcut = false
+        if let m = monitor {
+            NSEvent.removeMonitor(m)
+            monitor = nil
+        }
+    }
+
+    private func handle(_ event: NSEvent) {
+        if event.keyCode == 0x35 {  // Esc
+            stopRecording()
+            return
+        }
+        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let candidate = ShortcutBinding(
+            keyCode: event.keyCode,
+            modifierFlagsRaw: mods.rawValue,
+            displayCharacter: event.charactersIgnoringModifiers ?? ""
+        )
+        if let error = onValidate(candidate) {
+            errorMessage = error
+            return
+        }
+        binding = candidate
+        errorMessage = nil
+        stopRecording()
+    }
+}
+
 /// SwiftUI's macOS Settings scene auto-overrides the window title with the active TabView
 /// label, and both Settings and About panels remember their last-closed origin between runs
 /// (we want them centered every time). Pin title and recenter on open via NSWindow access.
@@ -114,6 +215,24 @@ private struct ColumnsSettingsView: View {
             Form {
                 Toggle("Compact mode", isOn: $compactMode)
 
+                LabeledContent("Shortcut") {
+                    HStack(spacing: 6) {
+                        ShortcutRecorderField(
+                            binding: $store.compactShortcut,
+                            onValidate: validateCompactShortcut
+                        )
+                        if store.compactShortcut != .defaultCompact {
+                            Button {
+                                store.compactShortcut = .defaultCompact
+                            } label: {
+                                Image(systemName: "arrow.counterclockwise")
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Restore default")
+                        }
+                    }
+                }
+
                 Picker("Layout", selection: $store.widthMode) {
                     ForEach(WidthMode.allCases) { mode in
                         Text(mode.label).tag(mode)
@@ -148,7 +267,7 @@ private struct ColumnsSettingsView: View {
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
-            .frame(height: store.widthMode == .manual ? 170 : 150)
+            .frame(height: store.widthMode == .manual ? 220 : 200)
 
             Divider()
 
