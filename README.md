@@ -13,7 +13,11 @@
 
 ## Install
 
-X Free is source-only. You'll need Xcode and a free Apple ID.
+Download the latest `.dmg` from the [Releases](https://github.com/dbkarashev/xfree/releases) page and drag **X Free** into your Applications folder.
+
+X Free isn't notarized, so on first launch macOS will say it's from an "unidentified developer". Right-click the app → **Open** → **Open** in the dialog. macOS remembers your choice; subsequent launches behave normally.
+
+### Building from source
 
 ```sh
 git clone https://github.com/dbkarashev/xfree.git
@@ -21,7 +25,7 @@ cd xfree
 open XFree.xcodeproj
 ```
 
-In Xcode → **Signing & Capabilities**, switch the team to your own (the project ships with the maintainer's), then **Product → Run** (`⌘R`) to build and launch.
+In Xcode → **Signing & Capabilities**, switch the team to your own (the project ships with the maintainer's), then **Product → Run** (`⌘R`).
 
 ## Settings
 
