@@ -41,9 +41,14 @@ private struct GeneralSettingsView: View {
                         .disabled(store.loggedInUsername == nil)
                 }
             }
+
+            LabeledContent("Reset") {
+                Button("Restore Defaults") { confirmRestoreDefaults(store: store) }
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
+        .scrollDisabled(true)
     }
 }
 
@@ -150,7 +155,11 @@ struct ShortcutRecorderField: View {
 
 /// SwiftUI's macOS Settings scene auto-overrides the window title with the active TabView
 /// label, and both Settings and About panels remember their last-closed origin between runs
-/// (we want them centered every time). Pin title and recenter on open via NSWindow access.
+/// (we want them centered every time). Pin title and recenter via NSWindow access.
+///
+/// The view is mounted lazily and reused across closes (SwiftUI hides the window rather than
+/// destroying the view), so initial-open work runs in `makeNSView` while subsequent recenters
+/// hang off a `\.isVisible` KVO observer.
 struct PanelWindowAccessor: NSViewRepresentable {
     let staticTitle: String?
     let centerOnOpen: Bool
@@ -166,6 +175,7 @@ struct PanelWindowAccessor: NSViewRepresentable {
             if centerOnOpen {
                 window.setFrameAutosaveName("")
                 window.center()
+                context.coordinator.observeVisibility(window: window)
             }
         }
         return view
@@ -176,18 +186,53 @@ struct PanelWindowAccessor: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     final class Coordinator {
-        private var observer: NSKeyValueObservation?
+        private var titleObserver: NSKeyValueObservation?
+        private var visibilityObserver: NSKeyValueObservation?
 
+        /// Synchronous re-set so AppKit doesn't get to redraw the titlebar with the SwiftUI
+        /// auto-title before we override — that's what was producing the flicker on tab switch.
         func observeTitle(window: NSWindow, expected: String) {
-            observer = window.observe(\.title, options: [.new]) { w, _ in
-                if w.title != expected {
-                    DispatchQueue.main.async { w.title = expected }
+            titleObserver = window.observe(\.title, options: [.new]) { w, _ in
+                if w.title != expected { w.title = expected }
+            }
+        }
+
+        /// Settings/About windows are hidden, not destroyed, on close. Re-center every time the
+        /// window flips back to visible so reopens always land in the middle.
+        func observeVisibility(window: NSWindow) {
+            visibilityObserver = window.observe(\.isVisible, options: [.new]) { w, change in
+                guard change.newValue == true else { return }
+                DispatchQueue.main.async {
+                    w.setFrameAutosaveName("")
+                    w.center()
                 }
             }
         }
 
-        deinit { observer?.invalidate() }
+        deinit {
+            titleObserver?.invalidate()
+            visibilityObserver?.invalidate()
+        }
     }
+}
+
+/// Wipe app preferences — appearance, hide-ads, compact mode, page zoom, columns and column
+/// shortcut. Doesn't touch session state (x.com cookies / login).
+@MainActor
+func confirmRestoreDefaults(store: AppConfigStore) {
+    let alert = NSAlert()
+    alert.messageText = "Restore default settings?"
+    alert.informativeText = "Appearance, columns, compact shortcut and other preferences will be reset. Your x.com login and custom columns' web data are unaffected."
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "Restore")
+    alert.addButton(withTitle: "Cancel")
+    alert.buttons.first?.hasDestructiveAction = true
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    let defaults = UserDefaults.standard
+    for key in ["appearance", "hideAds", "compactMode", "pageZoom"] {
+        defaults.removeObject(forKey: key)
+    }
+    store.resetToDefaults()
 }
 
 /// Modal NSAlert so the same confirm flow works from both Settings and the app menu —
@@ -267,6 +312,7 @@ private struct ColumnsSettingsView: View {
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
             .frame(height: store.widthMode == .manual ? 220 : 200)
 
             Divider()

@@ -239,6 +239,17 @@ final class AppConfigStore: ObservableObject {
         WebViewCache.shared.evict(id.uuidString)
     }
 
+    /// Reset everything we own to its default value. Doesn't touch session state
+    /// (`loggedInUsername`, x.com cookies) — that's not a setting.
+    @MainActor
+    func resetToDefaults() {
+        WebViewCache.shared.evictAll()
+        widthMode = .manual
+        columnWidth = 450
+        columns = [Column(type: .custom, url: "https://x.com/home")]
+        compactShortcut = .defaultCompact
+    }
+
     /// Drop x.com cookies, localStorage, IndexedDB, caches; evict cached x.com WebViews; clear
     /// the username flag so ContentView swaps back to LoginView.
     ///

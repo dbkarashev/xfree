@@ -36,6 +36,13 @@ final class WebViewCache {
             cache.removeValue(forKey: key)
         }
     }
+
+    func evictAll() {
+        for entry in cache.values {
+            entry.webView.stopLoading()
+        }
+        cache.removeAll()
+    }
 }
 
 struct WebView: NSViewRepresentable {
