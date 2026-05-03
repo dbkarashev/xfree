@@ -13,9 +13,15 @@
 
 ## Install
 
-Grab the latest `.dmg` from the [Releases](https://github.com/dbkarashev/xfree/releases) page, open it, and drag **X Free** to your Applications folder.
+X Free is source-only. You'll need Xcode and a free Apple ID.
 
-Builds are signed and notarized — Gatekeeper opens them on first launch with no extra clicks.
+```sh
+git clone https://github.com/dbkarashev/xfree.git
+cd xfree
+open XFree.xcodeproj
+```
+
+In Xcode → **Signing & Capabilities**, switch the team to your own (the project ships with the maintainer's), then **Product → Run** (`⌘R`) to build and launch.
 
 ## Settings
 
