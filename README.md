@@ -15,7 +15,13 @@
 
 Download the latest `.dmg` from the [Releases](https://github.com/dbkarashev/xfree/releases) page and drag **X Free** into your Applications folder.
 
-X Free isn't notarized, so on first launch macOS will say it's from an "unidentified developer". Right-click the app → **Open** → **Open** in the dialog. macOS remembers your choice; subsequent launches behave normally.
+X Free isn't notarized, so macOS blocks the first launch with "Apple could not verify X Free is free of malware…". To allow it:
+
+1. Try to open X Free once and dismiss the warning.
+2. Open **System Settings → Privacy & Security**, scroll down to the **Security** section, and click **Open Anyway** for X Free.
+3. Authenticate with Touch ID or your password.
+
+After that, X Free launches normally — macOS doesn't prompt again.
 
 ### Building from source
 
