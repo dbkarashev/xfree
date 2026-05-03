@@ -3,3 +3,9 @@ xcuserdata/
 
 # macOS Finder metadata
 .DS_Store
+
+# Release artifacts
+/dist/
+*.dmg
+*.zip
+*.xcarchive
