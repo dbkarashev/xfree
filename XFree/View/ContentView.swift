@@ -33,11 +33,22 @@ struct ContentView: View {
     }
 
     private func applyAppearanceChange() {
-        let dark = isDarkMode
-        Task {
-            await NightModeCookie.write(isDark: dark)
-            await MainActor.run { refreshSwitch.toggle() }
-        }
+        // WKHTTPCookieStore.setCookie commit is racy — the cookie isn't always visible to the
+        // very next request, so a native reload sometimes hits x.com with the old night_mode.
+        // Setting the cookie synchronously in the page's own JS context and then doing
+        // location.reload() is bulletproof: same-origin document.cookie writes are immediately
+        // visible to the reload that follows.
+        let value = isDarkMode ? "2" : "0"
+        let maxAge = 365 * 24 * 60 * 60
+        scriptExecutionRequest = """
+        (() => {
+          const host = window.location.hostname;
+          if (host !== 'x.com' && host !== 'www.x.com' && host !== 'twitter.com' && host !== 'www.twitter.com') return;
+          document.cookie = "night_mode=\(value); domain=.x.com; path=/; max-age=\(maxAge)";
+          document.cookie = "night_mode=\(value); domain=.twitter.com; path=/; max-age=\(maxAge)";
+          location.reload();
+        })();
+        """
     }
 
     @ViewBuilder
