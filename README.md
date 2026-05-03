@@ -6,7 +6,7 @@
 ---
 
 <p align="center">
-    <img src="https://img.shields.io/badge/Built_with-Swift-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Built with Swift">&nbsp;
+    <a href="https://swift.org"><img src="https://img.shields.io/badge/Built_with-Swift-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Built with Swift"></a>&nbsp;
     <img src="https://img.shields.io/badge/Platform-macOS-0071E3?style=for-the-badge&logo=apple&logoColor=white" alt="macOS">&nbsp;
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2E8B57?style=for-the-badge" alt="MIT License"></a>
 </p>
