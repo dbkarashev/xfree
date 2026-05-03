@@ -5,21 +5,36 @@ import AppKit
 /// Per-column WKWebView cache. SwiftUI rebuilds the view tree on compact toggle and frame
 /// changes; without an external cache each rebuild creates a fresh WKWebView and reloads the
 /// page. We key by stable column id and let the same WKWebView ride through layout swaps.
+///
+/// Tracks `isXcom` per entry so sign-out can evict only x.com WebViews and leave custom
+/// columns (Reddit, HN, etc.) intact across the logout transition.
 final class WebViewCache {
     static let shared = WebViewCache()
 
-    private var cache: [String: WKWebView] = [:]
+    private struct Entry {
+        let webView: WKWebView
+        let isXcom: Bool
+    }
 
-    func webView(forKey key: String, factory: () -> WKWebView) -> WKWebView {
-        if let cached = cache[key] { return cached }
+    private var cache: [String: Entry] = [:]
+
+    func webView(forKey key: String, isXcom: Bool, factory: () -> WKWebView) -> WKWebView {
+        if let entry = cache[key] { return entry.webView }
         let fresh = factory()
-        cache[key] = fresh
+        cache[key] = Entry(webView: fresh, isXcom: isXcom)
         return fresh
     }
 
     func evict(_ key: String) {
-        cache[key]?.stopLoading()
+        cache[key]?.webView.stopLoading()
         cache.removeValue(forKey: key)
+    }
+
+    func evictXcom() {
+        for (key, entry) in cache where entry.isXcom {
+            entry.webView.stopLoading()
+            cache.removeValue(forKey: key)
+        }
     }
 }
 
@@ -38,10 +53,11 @@ struct WebView: NSViewRepresentable {
     var refreshSwitch: Bool = false
     var configuration: WKWebViewConfiguration? = nil
     var cacheKey: String? = nil
+    var cacheIsXcom: Bool = false
 
     func makeNSView(context: Context) -> WKWebView {
         if let cacheKey {
-            let webView = WebViewCache.shared.webView(forKey: cacheKey) {
+            let webView = WebViewCache.shared.webView(forKey: cacheKey, isXcom: cacheIsXcom) {
                 makeFreshWebView(context: context)
             }
             // Cached view is being parented to a new SwiftUI host; detach from the old one first

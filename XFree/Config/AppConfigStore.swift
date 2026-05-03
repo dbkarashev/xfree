@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import WebKit
 
 enum WidthMode: String, Codable, CaseIterable, Identifiable {
     case auto
@@ -21,6 +22,11 @@ final class AppConfigStore: ObservableObject {
     @Published var widthMode: WidthMode { didSet { scheduleSave() } }
     @Published var columnWidth: Int { didSet { scheduleSave() } }
     @Published var columns: [Column] { didSet { scheduleSave() } }
+
+    /// Source of truth: re-detected on every launch by the `findUserName` script that runs in the
+    /// LoginView WebView. Not persisted — cookies in WKWebsiteDataStore are persistent enough,
+    /// and persisting a separate copy would just risk diverging from the real cookie state.
+    @Published var loggedInUsername: String? = nil
 
     struct Column: Identifiable, Codable, Hashable {
         var id: UUID = UUID()
@@ -142,6 +148,23 @@ final class AppConfigStore: ObservableObject {
     func removeColumn(_ id: UUID) {
         columns.removeAll { $0.id == id }
         WebViewCache.shared.evict(id.uuidString)
+    }
+
+    /// Drop x.com cookies, localStorage, IndexedDB, caches; evict cached x.com WebViews; clear
+    /// the username flag so ContentView swaps back to LoginView.
+    ///
+    /// Order matters: tear down WK data BEFORE flipping the state flag, so the LoginView WebView
+    /// SwiftUI creates next reads from an already-clean datastore (otherwise it'd happily read
+    /// the still-live cookies and auto-relog the user).
+    @MainActor
+    func signOut() async {
+        let dataStore = WKWebsiteDataStore.default()
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        let records = await dataStore.dataRecords(ofTypes: types)
+        let xRecords = records.filter { ["x.com", "twitter.com"].contains($0.displayName) }
+        await dataStore.removeData(ofTypes: types, for: xRecords)
+        WebViewCache.shared.evictXcom()
+        loggedInUsername = nil
     }
 
     func moveColumn(from source: IndexSet, to destination: Int) {

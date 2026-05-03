@@ -21,8 +21,11 @@ struct ContentView: View {
 
     @State var homeUrl: URL = URL(string: "https://x.com/home")!
     @State var notificationsUrl: URL = URL(string: "https://x.com/notifications")!
-    @State var profileUrl: URL? = nil
     @State var compactPageIndex: Int = 0
+
+    private var profileUrl: URL? {
+        store.loggedInUsername.flatMap { URL(string: "https://x.com/\($0)") }
+    }
 
     private var isDarkMode: Bool {
         appearance.colorScheme == .dark
@@ -54,7 +57,6 @@ struct ContentView: View {
     @ViewBuilder
     private func makeColumn(
         column: AppConfigStore.Column,
-        profileUrl: Binding<URL?>,
         columnWidth: CGFloat
     ) -> some View {
         let width = columnWidth
@@ -71,6 +73,7 @@ struct ContentView: View {
         }()
 
         let cacheKey = column.id.uuidString
+        let cacheIsXcom = column.isXColumn
 
         switch column.type {
         case .forYou:
@@ -82,7 +85,8 @@ struct ContentView: View {
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
                     onLoadScripts: baseConfiguration + [.clickForYouTab]),
-                cacheKey: cacheKey
+                cacheKey: cacheKey,
+                cacheIsXcom: cacheIsXcom
             ).frame(width: width)
         case .following:
             WebView(
@@ -93,7 +97,8 @@ struct ContentView: View {
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
                     onLoadScripts: baseConfiguration + [.clickFollowingTab]),
-                cacheKey: cacheKey
+                cacheKey: cacheKey,
+                cacheIsXcom: cacheIsXcom
             ).frame(width: width)
         case .notifications:
             WebView(
@@ -105,12 +110,13 @@ struct ContentView: View {
                 refreshSwitch: refreshSwitch,
                 configuration: WebViewConfigurations.makeConfiguration(
                     onLoadScripts: baseConfiguration),
-                cacheKey: cacheKey
+                cacheKey: cacheKey,
+                cacheIsXcom: cacheIsXcom
             ).frame(width: width)
         case .profile:
-            if let url = Binding(profileUrl) {
+            if let url = profileUrl {
                 WebView(
-                    isLoading: $isLoading, url: url, alertMessage: $alertMessage,
+                    isLoading: $isLoading, url: .constant(url), alertMessage: $alertMessage,
                     messageFromWebView: $webViewMessage,
                     scriptExecutionRequest: column.isXColumn
                         ? $scriptExecutionRequest : .constant(nil),
@@ -118,7 +124,8 @@ struct ContentView: View {
                     refreshSwitch: refreshSwitch,
                     configuration: WebViewConfigurations.makeConfiguration(
                         onLoadScripts: baseConfiguration),
-                    cacheKey: cacheKey
+                    cacheKey: cacheKey,
+                    cacheIsXcom: cacheIsXcom
                 ).frame(width: width)
             }
         case .custom:
@@ -131,7 +138,8 @@ struct ContentView: View {
                     refreshSwitch: refreshSwitch,
                     configuration: WebViewConfigurations.makeConfiguration(
                         onLoadScripts: baseConfiguration),
-                    cacheKey: cacheKey
+                    cacheKey: cacheKey,
+                    cacheIsXcom: cacheIsXcom
                 ).frame(width: width)
             }
         }
@@ -220,7 +228,6 @@ struct ContentView: View {
                 let column = store.columns[index]
                 makeColumn(
                     column: column,
-                    profileUrl: $profileUrl,
                     columnWidth: columnWidth
                 )
             }
@@ -260,7 +267,6 @@ struct ContentView: View {
             ForEach(store.columns) { column in
                 makeColumn(
                     column: column,
-                    profileUrl: $profileUrl,
                     columnWidth: dynamicColumnWidth
                 )
             }
@@ -280,9 +286,7 @@ struct ContentView: View {
         else { return }
         switch message.type {
         case .userName:
-            if let url = URL(string: "https://x.com/\(message.body)") {
-                profileUrl = url
-            }
+            store.loggedInUsername = message.body
         }
     }
 }

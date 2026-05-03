@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     var body: some View {
@@ -13,6 +14,7 @@ struct SettingsView: View {
 }
 
 private struct GeneralSettingsView: View {
+    @EnvironmentObject private var store: AppConfigStore
     @AppStorage("appearance") private var appearance: AppearanceMode = .light
     @AppStorage("hideAds") private var hideAds: Bool = true
 
@@ -26,9 +28,38 @@ private struct GeneralSettingsView: View {
             .pickerStyle(.segmented)
 
             Toggle("Hide ads on x.com", isOn: $hideAds)
+
+            LabeledContent("Account") {
+                HStack {
+                    if let user = store.loggedInUsername {
+                        Text("@\(user)").foregroundStyle(.secondary)
+                    } else {
+                        Text("Not signed in").foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Log Out") { confirmLogOut(store: store) }
+                        .disabled(store.loggedInUsername == nil)
+                }
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
+    }
+}
+
+/// Modal NSAlert so the same confirm flow works from both Settings and the app menu —
+/// SwiftUI `.alert()` is awkward to drive from a `CommandGroup` button action.
+@MainActor
+func confirmLogOut(store: AppConfigStore) {
+    let alert = NSAlert()
+    alert.messageText = "Log out of X Free?"
+    alert.informativeText = "You'll need to log in again to use the deck. Custom non-x.com columns are unaffected."
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "Log Out")
+    alert.addButton(withTitle: "Cancel")
+    alert.buttons.first?.hasDestructiveAction = true
+    if alert.runModal() == .alertFirstButtonReturn {
+        Task { await store.signOut() }
     }
 }
 

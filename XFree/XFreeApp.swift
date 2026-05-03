@@ -35,6 +35,9 @@ struct XFreeApp: App {
             CommandGroup(replacing: .appInfo) {
                 AboutMenuButton()
             }
+            CommandGroup(after: .appSettings) {
+                LogOutMenuButton(store: configStore)
+            }
             CommandGroup(after: .windowSize) {
                 Button("Toggle Compact Mode") {
                     compactMode.toggle()
@@ -65,6 +68,15 @@ private struct AboutMenuButton: View {
             openWindow(id: "about")
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+}
+
+private struct LogOutMenuButton: View {
+    @ObservedObject var store: AppConfigStore
+
+    var body: some View {
+        Button("Log Out") { confirmLogOut(store: store) }
+            .disabled(store.loggedInUsername == nil)
     }
 }
 
