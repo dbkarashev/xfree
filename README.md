@@ -11,23 +11,30 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2E8B57?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-<!--
+## Install
+
+Grab the latest `.dmg` from the [Releases](https://github.com/dbkarashev/xfree/releases) page, open it, and drag **X Free** to your Applications folder.
+
+Builds are signed and notarized — Gatekeeper opens them on first launch with no extra clicks.
+
 ## Settings
 
-`⌘,` opens Settings.
+<kbd>⌘</kbd> <kbd>,</kbd> opens Settings.
 
-- **General** — appearance (system / light / dark), hide ads
-- **Columns** — auto vs manual width, drag to reorder, swipe to delete
+- **General** — appearance (light or dark, default light), hide ads on x.com.
+- **Columns** — compact mode toggle, auto vs manual width, drag to reorder, swipe to delete.
 
-Column types: `forYou`, `following`, `notifications`, `profile`, `custom` (with `url`). Custom URLs on `x.com` / `twitter.com` get the same ad-block treatment as built-in columns.
+Column types: `For you`, `Following`, `Notifications`, `Profile`, `Custom URL`. Custom URLs on `x.com` / `twitter.com` get the same ad-block treatment as built-in columns.
 
 ## Shortcuts
 
-- `⌘+` / `⌘-` — zoom
-- `⌘R` — refresh
-- `⌘\` — toggle compact mode
-- `⌘1`–`⌘9` — jump to column N (compact mode)
--->
+| | |
+| --- | --- |
+| <kbd>⌥</kbd> <kbd>/</kbd> | Toggle compact mode |
+| <kbd>⌘</kbd> <kbd>R</kbd> | Refresh |
+| <kbd>⌘</kbd> <kbd>+</kbd> · <kbd>⌘</kbd> <kbd>-</kbd> | Zoom in / out |
+| <kbd>⌘</kbd> <kbd>1</kbd> … <kbd>⌘</kbd> <kbd>9</kbd> | Jump to column N (compact mode) |
+| <kbd>⌘</kbd> <kbd>,</kbd> | Settings |
 
 ## Credits
 
