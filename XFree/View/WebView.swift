@@ -17,25 +17,6 @@ struct WebView: NSViewRepresentable {
     var refreshSwitch: Bool = false
     var configuration: WKWebViewConfiguration? = nil
 
-    private static var nightModeCookieSeeded = false
-
-    private static func seedNightModeCookieIfNeeded(isDarkMode: Bool, in store: WKHTTPCookieStore) {
-        guard !nightModeCookieSeeded else { return }
-        nightModeCookieSeeded = true
-        let value = isDarkMode ? "2" : "0"
-        for domain in [".x.com", ".twitter.com"] {
-            if let cookie = HTTPCookie(properties: [
-                .domain: domain,
-                .path: "/",
-                .name: "night_mode",
-                .value: value,
-                .expires: Date(timeIntervalSinceNow: 60 * 60 * 24 * 365),
-            ]) {
-                store.setCookie(cookie)
-            }
-        }
-    }
-
     func makeNSView(context: Context) -> WKWebView {
         let webView: WKWebView
         if let configuration = configuration {
@@ -44,13 +25,12 @@ struct WebView: NSViewRepresentable {
             webView = HorizontalScrollSwallowingWebView()
         }
         // Pretend Safari because 𝕏 bans the user agent of WebView
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1.2 Safari/605.1.15"
+        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15"
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.underPageBackgroundColor = isDarkMode ? .black : .white
 
-        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
-        Self.seedNightModeCookieIfNeeded(isDarkMode: isDarkMode, in: cookieStore)
+        NightModeCookie.writeFireAndForget(isDark: isDarkMode)
 
         let request = URLRequest(url: url)
         webView.load(request)
@@ -73,7 +53,7 @@ struct WebView: NSViewRepresentable {
         }
         if refreshSwitch != context.coordinator.refreshSwitch {
             webView.load(URLRequest(url: url))
-            context.coordinator.refreshSwitch = !refreshSwitch
+            context.coordinator.refreshSwitch = refreshSwitch
         } else if let script = scriptExecutionRequest {
             webView.evaluateJavaScript(script)
             DispatchQueue.main.async {

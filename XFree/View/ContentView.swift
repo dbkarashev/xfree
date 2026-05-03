@@ -5,16 +5,13 @@ struct ContentView: View {
     @EnvironmentObject var store: AppConfigStore
 
     @AppStorage("pageZoom") var pageZoom: Double = 1
-    @AppStorage("appearance") var appearance: AppearanceMode = .system
+    @AppStorage("appearance") var appearance: AppearanceMode = .light
     @AppStorage("hideAds") var hideAds: Bool = true
-
-    @Environment(\.colorScheme) private var systemColorScheme
+    @AppStorage("compactMode") var compactMode: Bool = false
 
     @State var isLoading: Bool = false
     @State var isShowingAlert: Bool = false
     @State var alertMessage: String? = nil
-    /// Override from x.com `theme-color` meta. `nil` falls back to default per active theme.
-    @State var customBackgroundColor: Color? = nil
 
     @State var refreshSwitch: Bool = false
     @State var scriptExecutionRequest: String? = nil
@@ -27,27 +24,25 @@ struct ContentView: View {
     @State var profileUrl: URL? = nil
     @State var compactPageIndex: Int = 0
 
-    private static let compactWidthThreshold: CGFloat = 600
-
     private var isDarkMode: Bool {
-        (appearance.colorScheme ?? systemColorScheme) == .dark
+        appearance.colorScheme == .dark
     }
 
     private var backgroundColor: Color {
-        customBackgroundColor ?? (isDarkMode ? .black : .white)
+        isDarkMode ? .black : .white
     }
 
-    private static func setNightModeCookieScript(isDarkMode: Bool) -> String {
-        """
-        document.cookie = "night_mode=\(isDarkMode ? 2 : 0); domain=.x.com; path=/";
-        location.reload();
-        """
+    private func applyAppearanceChange() {
+        let dark = isDarkMode
+        Task {
+            await NightModeCookie.write(isDark: dark)
+            await MainActor.run { refreshSwitch.toggle() }
+        }
     }
 
     @ViewBuilder
     private func makeColumn(
         column: AppConfigStore.Column,
-        isFirstXColumn: Bool,
         profileUrl: Binding<URL?>,
         columnWidth: CGFloat
     ) -> some View {
@@ -57,9 +52,6 @@ struct ContentView: View {
             var scripts: [WebViewConfigurations.OnLoadScript] = [.global]
             if column.isXColumn {
                 scripts.append(contentsOf: [.hideSideHeader, .hidePostArea])
-                if isFirstXColumn {
-                    scripts.append(.findThemeColor)
-                }
             }
             if hideAds {
                 scripts.append(.hideAds)
@@ -130,7 +122,7 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             let columnCount = store.columns.count
-            let isCompact = geometry.size.width < Self.compactWidthThreshold
+            let isCompact = compactMode
             let baseWidth: CGFloat = {
                 if isCompact { return geometry.size.width }
                 switch store.widthMode {
@@ -187,16 +179,7 @@ struct ContentView: View {
             }
             .background(backgroundColor)
             .preferredColorScheme(appearance.colorScheme)
-            .onChange(of: appearance) { _ in
-                customBackgroundColor = nil
-                scriptExecutionRequest = Self.setNightModeCookieScript(isDarkMode: isDarkMode)
-            }
-            .onChange(of: systemColorScheme) { _ in
-                if appearance == .system {
-                    customBackgroundColor = nil
-                    scriptExecutionRequest = Self.setNightModeCookieScript(isDarkMode: isDarkMode)
-                }
-            }
+            .onChange(of: appearance) { _ in applyAppearanceChange() }
             .onChange(of: hideAds) { newValue in
                 scriptExecutionRequest = newValue
                     ? WebViewConfigurations.hideAds
@@ -210,7 +193,6 @@ struct ContentView: View {
 
     @ViewBuilder
     private func compactPager(columnWidth: CGFloat) -> some View {
-        let firstXIndex = store.columns.firstIndex { $0.isXColumn } ?? -1
         VStack(spacing: 0) {
             PagingScrollView(
                 pageCount: store.columns.count,
@@ -220,7 +202,6 @@ struct ContentView: View {
                 let column = store.columns[index]
                 makeColumn(
                     column: column,
-                    isFirstXColumn: index == firstXIndex,
                     profileUrl: $profileUrl,
                     columnWidth: columnWidth
                 )
@@ -257,12 +238,10 @@ struct ContentView: View {
 
     @ViewBuilder
     private func columnsStack(dynamicColumnWidth: CGFloat, canScroll: Bool) -> some View {
-        let firstXIndex = store.columns.firstIndex { $0.isXColumn } ?? -1
         let stack = HStack(spacing: 0) {
-            ForEach(Array(store.columns.enumerated()), id: \.element.id) { index, column in
+            ForEach(store.columns) { column in
                 makeColumn(
                     column: column,
-                    isFirstXColumn: index == firstXIndex,
                     profileUrl: $profileUrl,
                     columnWidth: dynamicColumnWidth
                 )
@@ -285,11 +264,6 @@ struct ContentView: View {
         case .userName:
             if let url = URL(string: "https://x.com/\(message.body)") {
                 profileUrl = url
-            }
-        case .themeColor:
-            // Honor X's theme-color only when user hasn't pinned a scheme.
-            if appearance == .system {
-                customBackgroundColor = Color(hex: message.body)
             }
         }
     }

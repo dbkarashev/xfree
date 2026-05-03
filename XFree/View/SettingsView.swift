@@ -13,7 +13,7 @@ struct SettingsView: View {
 }
 
 private struct GeneralSettingsView: View {
-    @AppStorage("appearance") private var appearance: AppearanceMode = .system
+    @AppStorage("appearance") private var appearance: AppearanceMode = .light
     @AppStorage("hideAds") private var hideAds: Bool = true
 
     var body: some View {
@@ -34,16 +34,20 @@ private struct GeneralSettingsView: View {
 
 private struct ColumnsSettingsView: View {
     @EnvironmentObject private var store: AppConfigStore
+    @AppStorage("compactMode") private var compactMode: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
+                Toggle("Compact mode", isOn: $compactMode)
+
                 Picker("Layout", selection: $store.widthMode) {
                     ForEach(WidthMode.allCases) { mode in
                         Text(mode.label).tag(mode)
                     }
                 }
                 .pickerStyle(.segmented)
+                .disabled(compactMode)
 
                 if store.widthMode == .manual {
                     LabeledContent("Width") {
@@ -62,6 +66,7 @@ private struct ColumnsSettingsView: View {
                                 .frame(width: 60, alignment: .trailing)
                         }
                     }
+                    .disabled(compactMode)
                 } else {
                     Text("Columns split the window equally. Below \(Int(AppConfigStore.minColumnWidth)) px per column the deck scrolls horizontally.")
                         .font(.caption)
@@ -70,7 +75,7 @@ private struct ColumnsSettingsView: View {
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
-            .frame(height: store.widthMode == .manual ? 130 : 110)
+            .frame(height: store.widthMode == .manual ? 170 : 150)
 
             Divider()
 

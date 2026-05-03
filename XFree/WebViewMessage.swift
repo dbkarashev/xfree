@@ -6,6 +6,5 @@ struct WebViewMessage: Decodable {
 
     enum MessageType: String, Decodable {
         case userName
-        case themeColor
     }
 }

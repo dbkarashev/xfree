@@ -1,11 +1,29 @@
 import Foundation
 import WebKit
 
+enum NightModeCookie {
+    static func write(isDark: Bool) async {
+        let store = WKWebsiteDataStore.default().httpCookieStore
+        let value = isDark ? "2" : "0"
+        for domain in [".x.com", ".twitter.com"] {
+            guard let cookie = HTTPCookie(properties: [
+                .domain: domain, .path: "/",
+                .name: "night_mode", .value: value,
+                .expires: Date(timeIntervalSinceNow: 365 * 24 * 60 * 60),
+            ]) else { continue }
+            await store.setCookie(cookie)
+        }
+    }
+
+    static func writeFireAndForget(isDark: Bool) {
+        Task { await write(isDark: isDark) }
+    }
+}
+
 struct WebViewConfigurations {
     enum OnLoadScript {
         case global
         case findUserName
-        case findThemeColor
         case clickForYouTab
         case hidePostArea
         case clickFollowingTab
@@ -16,7 +34,6 @@ struct WebViewConfigurations {
             switch self {
             case .global: return WebViewConfigurations.global
             case .findUserName: return WebViewConfigurations.findUserName
-            case .findThemeColor: return WebViewConfigurations.findThemeColor
             case .clickForYouTab: return WebViewConfigurations.clickForYouTab
             case .hidePostArea: return WebViewConfigurations.hidePostArea
             case .clickFollowingTab: return WebViewConfigurations.clickFollowingTab
@@ -27,7 +44,7 @@ struct WebViewConfigurations {
 
         var runAfterLoad: Bool {
             switch self {
-            case .findUserName, .findThemeColor, .clickForYouTab, .clickFollowingTab, .hideSideHeader, .hidePostArea, .hideAds:
+            case .findUserName, .clickForYouTab, .clickFollowingTab, .hideSideHeader, .hidePostArea, .hideAds:
                 return true
             case .global:
                 return false
@@ -100,14 +117,6 @@ struct WebViewConfigurations {
                 const message = JSON.stringify({ type: "userName", body: userName });
                 webkit.messageHandlers.\(Self.handlerName).postMessage(message);
             }
-        });
-    """
-
-    private static let findThemeColor: String = """
-        waitForElement("meta[name='theme-color']", 0, (element) => {
-            const themeColor = element.getAttribute('content')
-            const message = JSON.stringify({ type: "themeColor", body: themeColor });
-            webkit.messageHandlers.\(Self.handlerName).postMessage(message);
         });
     """
 
