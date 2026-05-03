@@ -10,6 +10,7 @@ struct SettingsView: View {
                 .tabItem { Label("Columns", systemImage: "rectangle.split.3x1") }
         }
         .frame(width: 540, height: 420)
+        .background(PanelWindowAccessor(staticTitle: "Settings", centerOnOpen: true))
     }
 }
 
@@ -30,13 +31,12 @@ private struct GeneralSettingsView: View {
             Toggle("Hide ads on x.com", isOn: $hideAds)
 
             LabeledContent("Account") {
-                HStack {
+                HStack(spacing: 8) {
                     if let user = store.loggedInUsername {
                         Text("@\(user)").foregroundStyle(.secondary)
                     } else {
                         Text("Not signed in").foregroundStyle(.secondary)
                     }
-                    Spacer()
                     Button("Log Out") { confirmLogOut(store: store) }
                         .disabled(store.loggedInUsername == nil)
                 }
@@ -44,6 +44,48 @@ private struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
+    }
+}
+
+/// SwiftUI's macOS Settings scene auto-overrides the window title with the active TabView
+/// label, and both Settings and About panels remember their last-closed origin between runs
+/// (we want them centered every time). Pin title and recenter on open via NSWindow access.
+struct PanelWindowAccessor: NSViewRepresentable {
+    let staticTitle: String?
+    let centerOnOpen: Bool
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { [weak view] in
+            guard let window = view?.window else { return }
+            if let title = staticTitle {
+                window.title = title
+                context.coordinator.observeTitle(window: window, expected: title)
+            }
+            if centerOnOpen {
+                window.setFrameAutosaveName("")
+                window.center()
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator {
+        private var observer: NSKeyValueObservation?
+
+        func observeTitle(window: NSWindow, expected: String) {
+            observer = window.observe(\.title, options: [.new]) { w, _ in
+                if w.title != expected {
+                    DispatchQueue.main.async { w.title = expected }
+                }
+            }
+        }
+
+        deinit { observer?.invalidate() }
     }
 }
 

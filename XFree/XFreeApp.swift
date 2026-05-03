@@ -35,8 +35,9 @@ struct XFreeApp: App {
             CommandGroup(replacing: .appInfo) {
                 AboutMenuButton()
             }
-            CommandGroup(after: .appSettings) {
+            CommandGroup(before: .appTermination) {
                 LogOutMenuButton(store: configStore)
+                Divider()
             }
             CommandGroup(after: .windowSize) {
                 Button("Toggle Compact Mode") {

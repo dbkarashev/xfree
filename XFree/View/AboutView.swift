@@ -48,6 +48,7 @@ struct AboutView: View {
                 .padding(.bottom, 28)
         }
         .frame(width: 380)
+        .background(PanelWindowAccessor(staticTitle: nil, centerOnOpen: true))
     }
 }
 
