@@ -19,7 +19,7 @@ struct XFreeApp: App {
                 .environmentObject(configStore)
                 .preferredColorScheme(appearance.colorScheme)
                 .frame(minWidth: 380, minHeight: 380)
-                .background(DeckWindowAccessor())
+                .background(DeckWindowAccessor(configStore: configStore))
                 .onAppear {
                     DispatchQueue.main.async {
                         applyCompactMode(compactMode)
@@ -148,7 +148,7 @@ private extension XFreeApp {
 }
 
 private struct DeckWindowAccessor: NSViewRepresentable {
-    @EnvironmentObject var configStore: AppConfigStore
+    let configStore: AppConfigStore
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
