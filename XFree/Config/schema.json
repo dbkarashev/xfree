@@ -5,6 +5,10 @@
     "$schema": {
       "type": "string"
     },
+    "widthMode": {
+      "type": "string",
+      "enum": ["auto", "manual"]
+    },
     "columnWidth": {
       "type": "integer"
     },
@@ -39,6 +43,16 @@
           }
         ]
       }
+    },
+    "compactShortcut": {
+      "type": "object",
+      "properties": {
+        "keyCode": { "type": "integer" },
+        "modifierFlagsRaw": { "type": "integer" },
+        "displayCharacter": { "type": "string" }
+      },
+      "required": ["keyCode", "modifierFlagsRaw", "displayCharacter"],
+      "additionalProperties": false
     }
   },
   "required": ["columns"],

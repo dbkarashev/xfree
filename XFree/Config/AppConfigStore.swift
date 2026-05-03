@@ -197,7 +197,7 @@ final class AppConfigStore: ObservableObject {
 
     init() {
         let stored = Self.load()
-        self.widthMode = stored?.widthMode ?? .manual
+        self.widthMode = stored?.widthMode ?? .auto
         self.columnWidth = stored?.columnWidth ?? 400
         self.columns = stored?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
         self.compactShortcut = stored?.compactShortcut ?? .defaultCompact
@@ -271,7 +271,7 @@ final class AppConfigStore: ObservableObject {
     func resetToDefaults() {
         WebViewCache.shared.evictAll()
         let bundled = Self.loadBundledDefaults()
-        widthMode = bundled?.widthMode ?? .manual
+        widthMode = bundled?.widthMode ?? .auto
         columnWidth = bundled?.columnWidth ?? 400
         columns = bundled?.columns ?? [Column(type: .custom, url: "https://x.com/home")]
         compactShortcut = bundled?.compactShortcut ?? .defaultCompact
